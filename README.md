@@ -2,6 +2,9 @@
 
 A lightweight Python wrapper for the Kalshi trading API. Fairly untested at the moment.
 
+## Installing
+Install with pip: `python3 -m pip install kalshi-python-unofficial`
+
 ## Usage
 ### Setting API Credentials
 ```python
