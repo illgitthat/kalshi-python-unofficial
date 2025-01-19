@@ -1,7 +1,5 @@
 from .rest import get, post, delete, get_kwargs, drop_none
 import kalshi.auth
-import requests
-import json
 
 
 class Portfolio:
