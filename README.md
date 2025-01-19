@@ -1,6 +1,6 @@
 # kalshi-python-unofficial
 
-A lightweight Python wrapper for the Kalshi trading API.
+A lightweight Python wrapper for the Kalshi trading API. Fairly untested at the moment.
 
 ## Usage
 ### Setting API Credentials
@@ -10,6 +10,7 @@ kalshi.auth.set_key("PUBLIC_KEY","path/to/private_key.pem")
 ```
 
 ### REST Endpoints
+Full coverage except for collections and advanced endpoints.
 ```python
 from kalshi.rest import portfolio, exchange
 print(portfolio.GetBalance())

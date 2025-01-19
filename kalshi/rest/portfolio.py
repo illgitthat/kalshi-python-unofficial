@@ -1,5 +1,6 @@
 from .rest import get, post, delete, get_kwargs, drop_none
 import kalshi.auth
+import kalshi.constants
 
 
 class Portfolio:
@@ -16,7 +17,7 @@ class Portfolio:
 
     def GetBalance(self):
         return self._authenticated_get_request(
-            "https://api.elections.kalshi.com/trade-api/v2/portfolio/balance"
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/balance"
         )
 
     def GetFills(
@@ -29,7 +30,7 @@ class Portfolio:
         cursor: str = None,
     ):
         return self._authenticated_get_request(
-            "https://api.elections.kalshi.com/trade-api/v2/portfolio/fills",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/fills",
             **drop_none(get_kwargs()),
         )
 
@@ -44,13 +45,13 @@ class Portfolio:
         limit: int = 100,
     ):
         return self._authenticated_get_request(
-            "https://api.elections.kalshi.com/trade-api/v2/portfolio/orders",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders",
             **drop_none(get_kwargs()),
         )
 
     def GetOrder(self, order_id: str):
         return self._authenticated_get_request(
-            f"https://api.elections.kalshi.com/trade-api/v2/portfolio/orders/{order_id}"
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders/{order_id}"
         )
 
     def GetPositions(
@@ -63,7 +64,7 @@ class Portfolio:
         event_ticker: str = None,
     ):
         return self._authenticated_get_request(
-            "https://api.elections.kalshi.com/trade-api/v2/portfolio/positions",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/positions",
             **drop_none(get_kwargs()),
         )
 
@@ -75,13 +76,13 @@ class Portfolio:
         cursor: str = None,
     ):
         return self._authenticated_get_request(
-            "https://api.elections.kalshi.com/trade-api/v2/portfolio/settlements",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/settlements",
             **drop_none(get_kwargs()),
         )
 
     def GetPortfolioRestingOrderTotalValue(self):
         return self._authenticated_get_request(
-            "https://api.elections.kalshi.com/trade-api/v2/portfolio/summary/total_resting_order_value"
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/summary/total_resting_order_value"
         )
 
     def CreateOrder(
@@ -100,7 +101,7 @@ class Portfolio:
         yes_price: int = None,
     ):
         return self._authenticated_post_request(
-            "https://api.elections.kalshi.com/trade-api/v2/portfolio/orders",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders",
             drop_none(get_kwargs()),
         )
 
@@ -119,7 +120,7 @@ class Portfolio:
         args = drop_none(get_kwargs())
         del args["order_id"]
         return self._authenticated_post_request(
-            f"https://api.elections.kalshi.com/trade-api/v2/portfolio/orders/{order_id}/amend",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders/{order_id}/amend",
             args,
         )
 
@@ -129,13 +130,13 @@ class Portfolio:
         args = drop_none(get_kwargs())
         del args["order_id"]
         return self._authenticated_post_request(
-            f"https://api.elections.kalshi.com/trade-api/v2/portfolio/orders/{order_id}/decrease",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders/{order_id}/decrease",
             args,
         )
 
     def CancelOrder(self, order_id: str):
         return self._authenticated_del_request(
-            f"https://api.elections.kalshi.com/trade-api/v2/portfolio/orders/{order_id}"
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders/{order_id}"
         )
 
 

@@ -1,4 +1,5 @@
 from .rest import get, get_kwargs, drop_none
+import kalshi.constants
 
 
 class Collection:
@@ -11,13 +12,13 @@ class Collection:
         cursor: str = None,
     ):
         return get(
-            "https://api.elections.kalshi.com/trade-api/v2/multivariate_event_collections",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/multivariate_event_collections",
             **drop_none(get_kwargs()),
         )
 
     def GetMultivariateEventCollection(self, collection_ticker: str):
         return get(
-            f"https://api.elections.kalshi.com/trade-api/v2/multivariate_event_collections/{collection_ticker}"
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/multivariate_event_collections/{collection_ticker}"
         )
 
 

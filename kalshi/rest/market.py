@@ -1,4 +1,5 @@
 from .rest import get, get_kwargs, drop_none
+import kalshi.constants
 
 
 class Market:
@@ -11,7 +12,7 @@ class Market:
         with_nested_markets: bool = False,
     ):
         return get(
-            "https://api.elections.kalshi.com/trade-api/v2/events",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/events",
             **drop_none(get_kwargs()),
         )
 
@@ -21,7 +22,7 @@ class Market:
         with_nested_markets: bool = False,
     ):
         return get(
-            f"https://api.elections.kalshi.com/trade-api/v2/events/{event_ticker}",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/events/{event_ticker}",
             with_nested_markets=with_nested_markets,
         )
 
@@ -40,7 +41,7 @@ class Market:
         if "tickers" in args:
             args["tickers"] = ",".join(args["tickers"])
         return get(
-            "https://api.elections.kalshi.com/trade-api/v2/markets",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets",
             **args,
         )
 
@@ -53,27 +54,29 @@ class Market:
         max_ts: int = None,
     ):
         return get(
-            "https://api.elections.kalshi.com/trade-api/v2/markets/trades",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/trades",
             **drop_none(get_kwargs()),
         )
 
     def GetMarket(self, ticker: str):
-        return get(f"https://api.elections.kalshi.com/trade-api/v2/markets/{ticker}")
+        return get(
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/{ticker}"
+        )
 
     def GetMarketOrderbook(self, ticker: str, depth: int = None):
         if depth is not None:
             return get(
-                f"https://api.elections.kalshi.com/trade-api/v2/markets/{ticker}/orderbook",
+                f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/{ticker}/orderbook",
                 depth=depth,
             )
         else:
             return get(
-                f"https://api.elections.kalshi.com/trade-api/v2/markets/{ticker}/orderbook"
+                f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/{ticker}/orderbook"
             )
 
     def GetSeries(self, series_ticker: str):
         return get(
-            f"https://api.elections.kalshi.com/trade-api/v2/series/{series_ticker}"
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/series/{series_ticker}"
         )
 
     def GetMarketCandlesticks(
@@ -85,7 +88,7 @@ class Market:
         period_interval: int,
     ):
         return get(
-            f"https://api.elections.kalshi.com/trade-api/v2/series/{series_ticker}/markets/{ticker}/candlesticks",
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/series/{series_ticker}/markets/{ticker}/candlesticks",
             start_ts=start_ts,
             end_ts=end_ts,
             period_interval=period_interval,

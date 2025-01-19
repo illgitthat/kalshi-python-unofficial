@@ -1,17 +1,22 @@
 from .rest import get
+import kalshi.constants
 
 
 class Exchange:
     def GetExchangeAnnouncements(self):
         return get(
-            "https://api.elections.kalshi.com/trade-api/v2/exchange/announcements"
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/exchange/announcements"
         )
 
     def GetExchangeSchedule(self):
-        return get("https://api.elections.kalshi.com/trade-api/v2/exchange/schedule")
+        return get(
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/exchange/schedule"
+        )
 
     def GetExchangeStatus(self):
-        return get("https://api.elections.kalshi.com/trade-api/v2/exchange/status")
+        return get(
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/exchange/status"
+        )
 
 
 exchange = Exchange()
