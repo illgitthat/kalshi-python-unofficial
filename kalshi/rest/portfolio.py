@@ -1,65 +1,20 @@
-from .rest import get, get_kwargs, drop_none
+from .rest import get, post, delete, get_kwargs, drop_none
 import kalshi.auth
-import datetime
-import urllib.parse
 import requests
 import json
 
 
 class Portfolio:
     def _authenticated_get_request(self, url: str, **kwargs):
-        current_time = datetime.datetime.now()
-        timestamp = current_time.timestamp()
-        current_time_milliseconds = int(timestamp * 1000)
-        timestamp_str = str(current_time_milliseconds)
-        sig = kalshi.auth.signer.sign(
-            timestamp_str + "GET" + urllib.parse.urlparse(url).path
-        )
-        headers = {
-            "KALSHI-ACCESS-KEY": kalshi.auth.API_ACCESS_KEY,
-            "KALSHI-ACCESS-SIGNATURE": sig,
-            "KALSHI-ACCESS-TIMESTAMP": timestamp_str,
-        }
-        return get(url, headers, **kwargs)
+        return get(url, headers=kalshi.auth.request_headers("GET", url), **kwargs)
 
     def _authenticated_post_request(self, url: str, data: dict):
-        current_time = datetime.datetime.now()
-        timestamp = current_time.timestamp()
-        current_time_milliseconds = int(timestamp * 1000)
-        timestamp_str = str(current_time_milliseconds)
-        sig = kalshi.auth.signer.sign(
-            timestamp_str + "POST" + urllib.parse.urlparse(url).path
-        )
-        headers = {
-            "KALSHI-ACCESS-KEY": kalshi.auth.API_ACCESS_KEY,
-            "KALSHI-ACCESS-SIGNATURE": sig,
-            "KALSHI-ACCESS-TIMESTAMP": timestamp_str,
-        }
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code != 201:
-            raise Exception(response.content.decode())
-        return json.loads(response.content)
+        return post(url, headers=kalshi.auth.request_headers("POST", url), json=data)
 
     def _authenticated_del_request(self, url: str, data: dict = None):
-        current_time = datetime.datetime.now()
-        timestamp = current_time.timestamp()
-        current_time_milliseconds = int(timestamp * 1000)
-        timestamp_str = str(current_time_milliseconds)
-        sig = kalshi.auth.signer.sign(
-            timestamp_str + "DELETE" + urllib.parse.urlparse(url).path
+        return delete(
+            url, headers=kalshi.auth.request_headers("DELETE", url), json=data
         )
-        headers = {
-            "KALSHI-ACCESS-KEY": kalshi.auth.API_ACCESS_KEY,
-            "KALSHI-ACCESS-SIGNATURE": sig,
-            "KALSHI-ACCESS-TIMESTAMP": timestamp_str,
-        }
-        if data is not None:
-            response = requests.delete(url, headers=headers, json=data)
-        else:
-            response = requests.delete(url, headers=headers)
-        if response.status_code != 200:
-            raise Exception(response.content.decode())
-        return json.loads(response.content)
 
     def GetBalance(self):
         return self._authenticated_get_request(
@@ -187,7 +142,3 @@ class Portfolio:
 
 
 portfolio = Portfolio()
-
-# portfolio._authenticated_get_request(
-#    "https://api.elections.kalshi.com/trade-api/v2/portfolio/balance"
-# )

@@ -26,3 +26,17 @@ def get(url, headers=None, **kwargs):
     if response.status_code != 200:
         raise Exception(response.content.decode())
     return json.loads(response.content)
+
+
+def post(url, headers=None, json=None):
+    response = requests.post(url, headers=headers, json=json)
+    if response.status_code != 201:
+        raise Exception(response.content.decode())
+    return json.loads(response.content)
+
+
+def delete(url, headers=None, json=None):
+    response = requests.delete(url, headers=headers, json=json)
+    if response.status_code != 200:
+        raise Exception(response.content.decode())
+    return json.loads(response.content)

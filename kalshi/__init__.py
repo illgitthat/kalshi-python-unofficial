@@ -1,3 +1,3 @@
 from . import rest
 from .auth import auth
-from . import websocket
+from .websocket import WebsocketClient
