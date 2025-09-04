@@ -5,7 +5,8 @@ BASE_PATH = "/trade-api/v2"
 BASE_URL = DEMO_BASE_URL
 
 def use_demo():
-	pass
+	global BASE_URL
+	BASE_URL = DEMO_BASE_URL 
 
 def use_prod():
 	global BASE_URL

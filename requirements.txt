@@ -1,3 +1,7 @@
 cryptography
 Requests
 websockets
+numpy
+pandas
+matplotlib
+python-dotenv
