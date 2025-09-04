@@ -8,7 +8,7 @@ class Portfolio:
         return get(url, headers=kalshi.auth.request_headers("GET", url), **kwargs)
 
     def _authenticated_post_request(self, url: str, data: dict):
-        return post(url, headers=kalshi.auth.request_headers("POST", url), json=data)
+        return post(url, headers=kalshi.auth.request_headers("POST", url), body=data)
 
     def _authenticated_del_request(self, url: str, data: dict = None):
         return delete(
