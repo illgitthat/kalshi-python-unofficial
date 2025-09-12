@@ -99,6 +99,7 @@ class Portfolio:
         post_only: bool = None,
         sell_position_floor: int = None,
         yes_price: int = None,
+        time_in_force: str = None
     ):
         return self._authenticated_post_request(
             f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders",
