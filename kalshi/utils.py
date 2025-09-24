@@ -8,6 +8,36 @@ from matplotlib.cm import ScalarMappable
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 
+def get_all_trades(limit: int = 100, ticker: str = None, 
+                  min_ts: int = None, max_ts: int = None):
+    """
+    Get all trades with pagination support.
+    
+    Args:
+        limit: Maximum trades per request
+        ticker: Ticker filter
+        min_ts: Minimum timestamp filter
+        max_ts: Maximum timestamp filter
+        
+    Returns:
+        List of all trades
+    """
+    from kalshi.rest.market import Market
+    
+    market = Market()
+    all_trades = []
+    cursor = None
+    while True:
+        resp = market.GetTrades(limit=limit, cursor=cursor, ticker=ticker,
+                               min_ts=min_ts, max_ts=max_ts)
+        all_trades.extend(resp.get("trades", []))
+        cursor = resp.get("cursor")
+        if not cursor:
+            break
+    return all_trades
+
+
+
 def get_all_orders(limit: int = 100, status: str = None, 
                   ticker: str = None, event_ticker: str = None):
     """

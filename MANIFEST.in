@@ -9,6 +9,5 @@ recursive-exclude * *.ipynb
 
 # Exclude other non-essential files
 exclude example.env
-recursive-exclude docs *
 exclude .gitignore
 exclude .gitattributes 
