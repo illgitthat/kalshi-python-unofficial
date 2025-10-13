@@ -5,11 +5,14 @@ import inspect
 import time
 from datetime import datetime, timedelta
 
-# Rate limiter for basic access tier: Read 20/sec, Write 10/sec
+# Rate limiter for advanced access tier: Read 30/sec, Write 30/sec
 _last_read_call_time = datetime.now()
 _last_write_call_time = datetime.now()
-_READ_THRESHOLD_MS = 50  # 1000ms / 20 = 50ms between read calls
-_WRITE_THRESHOLD_MS = 100  # 1000ms / 10 = 100ms between write calls
+_READ_THRESHOLD_MS = 33  # 1000ms / 30 = 33ms between read calls
+_WRITE_THRESHOLD_MS = 33  # 1000ms / 30 = 33ms between write calls
+
+# Reuse a single session so subsequent requests can reuse pooled connections.
+SESSION = requests.Session()
 
 
 def _rate_limit_read():
@@ -49,7 +52,7 @@ def get(url, headers=None, **kwargs):
     for i in kwargs:
         if isinstance(kwargs[i], bool):
             kwargs[i] = str(kwargs[i]).lower()
-    response = requests.get(url, params=kwargs, headers=headers)
+    response = SESSION.get(url, params=kwargs, headers=headers)
     if response.status_code != 200:
         raise Exception(response.content.decode())
     return json.loads(response.content)
@@ -57,7 +60,7 @@ def get(url, headers=None, **kwargs):
 
 def post(url, headers=None, body=None):
     _rate_limit_write()
-    response = requests.post(url, headers=headers, json=body)
+    response = SESSION.post(url, headers=headers, json=body)
     if response.status_code != 201:
         raise Exception(response.content.decode())
     return json.loads(response.content)
@@ -65,7 +68,7 @@ def post(url, headers=None, body=None):
 
 def delete(url, headers=None, body=None):
     _rate_limit_write()
-    response = requests.delete(url, headers=headers, json=body)
+    response = SESSION.delete(url, headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(response.content.decode())
     return json.loads(response.content)
