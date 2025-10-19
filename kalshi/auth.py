@@ -50,6 +50,10 @@ class Auth:
         self.signer = Signer(self.API_PRIVATE_KEY_PATH)
 
     def request_headers(self, method: str, url: str):
+        if self.signer is None:
+            raise RuntimeError(
+                "Kalshi credentials not configured. Call auth.set_key(...) before making requests."
+            )
         current_time = datetime.datetime.now()
         timestamp = current_time.timestamp()
         current_time_milliseconds = int(timestamp * 1000)
