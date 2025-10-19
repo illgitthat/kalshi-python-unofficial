@@ -1,3 +1,4 @@
+import inspect
 import json
 import logging
 
@@ -28,9 +29,17 @@ class Client:
         :param url: The WebSocket endpoint to connect to (default = wss://api.elections.kalshi.com/trade-api/ws/v2).
         """
         logger.info("Attempting to connect to WebSocket: %s", url)
+        headers = kalshi.auth.request_headers("GET", url)
+        connect_kwargs = {}
+        signature = inspect.signature(websockets.connect)
+        if "additional_headers" in signature.parameters:
+            connect_kwargs["additional_headers"] = headers
+        else:
+            connect_kwargs["extra_headers"] = headers
+
         async with websockets.connect(
             url,
-            extra_headers=kalshi.auth.request_headers("GET", url),
+            **connect_kwargs,
         ) as websocket:
             self.ws = websocket
             logger.info("Connected to WebSocket: %s", url)
