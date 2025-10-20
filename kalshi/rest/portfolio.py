@@ -106,6 +106,12 @@ class Portfolio:
             drop_none(get_kwargs()),
         )
 
+    def BatchCreateOrders(self, orders: list):
+        return self._authenticated_post_request(
+            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/portfolio/orders/batched",
+            drop_none(get_kwargs()),
+        )
+
     def AmendOrder(
         self,
         order_id: str,
