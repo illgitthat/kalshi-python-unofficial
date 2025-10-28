@@ -12,7 +12,7 @@ class Portfolio:
 
     def _authenticated_del_request(self, url: str, data: dict = None):
         return delete(
-            url, headers=kalshi.auth.request_headers("DELETE", url), json=data
+            url, headers=kalshi.auth.request_headers("DELETE", url), body=data
         )
 
     def GetBalance(self):
