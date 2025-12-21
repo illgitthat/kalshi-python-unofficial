@@ -2,3 +2,11 @@ from .market import market
 from .exchange import exchange
 from .collection import collection
 from .portfolio import portfolio
+from .api_keys import api_keys
+from .search import search
+from .live_data import live_data
+from .incentive_programs import incentive_programs
+from .fcm import fcm
+from .structured_targets import structured_targets
+from .communications import communications
+from .milestones import milestones

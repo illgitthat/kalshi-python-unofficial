@@ -13,7 +13,7 @@ kalshi.auth.set_key("PUBLIC_KEY","path/to/private_key.pem")
 ```
 
 ### REST Endpoints
-Full coverage as of Jan 18th 2025 except for collections and advanced endpoints.
+Updated against Kalshi OpenAPI 3.3.0, including milestones, communications, live data, FCM, incentives, structured targets, API keys, search, order groups, and queue positions.
 ```python
 from kalshi.rest import portfolio, exchange
 print(portfolio.GetBalance())
