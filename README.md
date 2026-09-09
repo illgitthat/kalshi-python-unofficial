@@ -20,8 +20,13 @@ For local development:
 uv sync
 uv run pre-commit install
 uv run pytest
+uv run pytest -m schema
 uv build
 ```
+
+The schema suite is opt-in because it downloads the current Kalshi OpenAPI
+and AsyncAPI files. It detects endpoint and WebSocket contract drift without
+making normal tests depend on the network.
 
 ```python
 import kalshi

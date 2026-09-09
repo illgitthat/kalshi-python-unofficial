@@ -215,11 +215,18 @@ class Client:
                 return await self._reject_protocol_message(
                     f"{message_type} requires sid, seq, and an object payload"
                 )
-            market_key = payload.get("market_ticker") or payload.get("market_id")
-            if not isinstance(market_key, str) or not market_key:
+            market_ticker = payload.get("market_ticker")
+            market_id = payload.get("market_id")
+            if (
+                not isinstance(market_ticker, str)
+                or not market_ticker
+                or not isinstance(market_id, str)
+                or not market_id
+            ):
                 return await self._reject_protocol_message(
-                    f"{message_type} did not contain a valid market identifier"
+                    f"{message_type} requires valid market_ticker and market_id fields"
                 )
+            market_key = market_id
             ready_markets = self._orderbook_snapshots.setdefault(
                 subscription_id,
                 set(),

@@ -508,6 +508,7 @@ dev = [
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "pyyaml" },
     { name = "ruff" },
 ]
 docs = [
@@ -536,6 +537,7 @@ dev = [
     { name = "pyright", specifier = ">=1.1.400" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-cov", specifier = ">=6" },
+    { name = "pyyaml", specifier = ">=6" },
     { name = "ruff", specifier = ">=0.12" },
 ]
 docs = [

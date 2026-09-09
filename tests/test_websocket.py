@@ -6,6 +6,9 @@ import pytest
 
 from kalshi.websocket import Client, KalshiWebSocketError
 
+MARKET_A_ID = "00000000-0000-0000-0000-000000000001"
+MARKET_B_ID = "00000000-0000-0000-0000-000000000002"
+
 
 class FakeWebSocket:
     def __init__(self, incoming=None, close_code=None, close_reason=None):
@@ -118,7 +121,7 @@ def test_sequence_gap_closes_socket_without_delivering_invalid_message():
                 "type": "orderbook_snapshot",
                 "sid": 3,
                 "seq": 1,
-                "msg": {"market_ticker": "A"},
+                "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
             }
         )
         await client._handle_protocol_message(
@@ -126,7 +129,7 @@ def test_sequence_gap_closes_socket_without_delivering_invalid_message():
                 "type": "orderbook_snapshot",
                 "sid": 3,
                 "seq": 3,
-                "msg": {"market_ticker": "B"},
+                "msg": {"market_ticker": "B", "market_id": MARKET_B_ID},
             }
         )
 
@@ -147,7 +150,7 @@ def test_sequenced_error_advances_sequence_before_next_delta():
                 "type": "orderbook_snapshot",
                 "sid": 3,
                 "seq": 1,
-                "msg": {"market_ticker": "A"},
+                "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
             }
         )
         await client._handle_protocol_message(
@@ -163,7 +166,7 @@ def test_sequenced_error_advances_sequence_before_next_delta():
                 "type": "orderbook_delta",
                 "sid": 3,
                 "seq": 3,
-                "msg": {"market_ticker": "A"},
+                "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
             }
         )
 
@@ -184,7 +187,10 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "type": "orderbook_snapshot",
                         "sid": 1,
                         "seq": 1,
-                        "msg": {"market_ticker": "A"},
+                        "msg": {
+                            "market_ticker": "A",
+                            "market_id": MARKET_A_ID,
+                        },
                     }
                 ),
                 json.dumps(
@@ -192,7 +198,10 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "type": "orderbook_delta",
                         "sid": 1,
                         "seq": 2,
-                        "msg": {"market_ticker": "A"},
+                        "msg": {
+                            "market_ticker": "A",
+                            "market_id": MARKET_A_ID,
+                        },
                     }
                 ),
             ]
@@ -204,7 +213,10 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "type": "orderbook_delta",
                         "sid": 2,
                         "seq": 1,
-                        "msg": {"market_ticker": "A"},
+                        "msg": {
+                            "market_ticker": "A",
+                            "market_id": MARKET_A_ID,
+                        },
                     }
                 ),
                 json.dumps(
@@ -212,7 +224,10 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "type": "orderbook_snapshot",
                         "sid": 2,
                         "seq": 2,
-                        "msg": {"market_ticker": "A"},
+                        "msg": {
+                            "market_ticker": "A",
+                            "market_id": MARKET_A_ID,
+                        },
                     }
                 ),
                 json.dumps(
@@ -220,7 +235,10 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "type": "orderbook_delta",
                         "sid": 2,
                         "seq": 3,
-                        "msg": {"market_ticker": "A"},
+                        "msg": {
+                            "market_ticker": "A",
+                            "market_id": MARKET_A_ID,
+                        },
                     }
                 ),
             ]
@@ -299,7 +317,7 @@ def test_buffer_overflow_stops_buffered_deltas():
                 "type": "orderbook_snapshot",
                 "sid": 3,
                 "seq": 1,
-                "msg": {"market_ticker": "A"},
+                "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
             },
             {
                 "type": "error",
@@ -311,7 +329,7 @@ def test_buffer_overflow_stops_buffered_deltas():
                 "type": "orderbook_delta",
                 "sid": 3,
                 "seq": 3,
-                "msg": {"market_ticker": "A"},
+                "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
             },
         ]
         client = RecordingClient()
@@ -341,43 +359,52 @@ def test_buffer_overflow_stops_buffered_deltas():
         {
             "type": "orderbook_snapshot",
             "sid": 1,
-            "msg": {"market_ticker": "A"},
+            "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
         },
         {
             "type": "orderbook_snapshot",
             "sid": 1,
             "seq": 0,
-            "msg": {"market_ticker": "A"},
+            "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
         },
         {
             "type": "orderbook_snapshot",
             "sid": 0,
             "seq": 1,
-            "msg": {"market_ticker": "A"},
+            "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
         },
         {
             "type": "orderbook_snapshot",
             "sid": 1,
             "seq": 1,
-            "msg": {"market_ticker": []},
+            "msg": {"market_ticker": [], "market_id": MARKET_A_ID},
         },
         {
             "type": "orderbook_delta",
             "sid": 1,
             "seq": 1,
-            "msg": {"market_id": {}},
+            "msg": {"market_ticker": "A", "market_id": {}},
+        },
+        {
+            "type": "orderbook_snapshot",
+            "sid": 1,
+            "seq": 1,
+            "msg": {
+                "market_ticker": "A",
+                "market_id": "",
+            },
         },
         {
             "type": "orderbook_snapshot",
             "sid": [],
             "seq": 1,
-            "msg": {"market_ticker": "A"},
+            "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
         },
         {
             "type": "orderbook_snapshot",
             "sid": 1,
             "seq": "1",
-            "msg": {"market_ticker": "A"},
+            "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
         },
     ],
 )
