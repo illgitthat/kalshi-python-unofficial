@@ -5,13 +5,13 @@ import urllib.request
 import pytest
 import yaml
 
-from kalshi.rest.account import Account
-from kalshi.rest.collection import Collection
-from kalshi.rest.exchange import Exchange
-from kalshi.rest.market import Market
-from kalshi.rest.milestone import Milestone
-from kalshi.rest.portfolio import Portfolio
-from kalshi.websocket import Client, KalshiWebSocketError
+from fastkalshi.rest.account import Account
+from fastkalshi.rest.collection import Collection
+from fastkalshi.rest.exchange import Exchange
+from fastkalshi.rest.market import Market
+from fastkalshi.rest.milestone import Milestone
+from fastkalshi.rest.portfolio import Portfolio
+from fastkalshi.websocket import Client, KalshiWebSocketError
 
 pytestmark = pytest.mark.schema
 

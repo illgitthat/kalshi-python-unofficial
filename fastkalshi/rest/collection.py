@@ -1,4 +1,4 @@
-from kalshi.constants import api_url
+from fastkalshi.constants import api_url
 
 from .rest import drop_none, get
 

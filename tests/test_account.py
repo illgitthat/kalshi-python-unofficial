@@ -1,8 +1,8 @@
 import importlib
 from unittest.mock import Mock
 
-from kalshi import constants
-from kalshi.rest import account, rest
+from fastkalshi import constants
+from fastkalshi.rest import account, rest
 
 
 def test_account_limit_and_endpoint_cost_authentication(monkeypatch):
@@ -10,7 +10,7 @@ def test_account_limit_and_endpoint_cost_authentication(monkeypatch):
     response = Mock(status_code=200, content=b"{}")
     request = Mock(return_value=response)
     monkeypatch.setattr(rest.SESSION, "request", request)
-    module = importlib.import_module("kalshi.rest.account")
+    module = importlib.import_module("fastkalshi.rest.account")
     monkeypatch.setattr(
         module,
         "request_headers",

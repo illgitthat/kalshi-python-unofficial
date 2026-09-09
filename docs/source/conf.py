@@ -12,10 +12,10 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "kalshi-python-unofficial"
+project = "fastkalshi"
 copyright = "2026, humz2k"
 author = "humz2k"
-release = package_version("kalshi-python-unofficial")
+release = package_version("fastkalshi")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

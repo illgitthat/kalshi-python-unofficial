@@ -1,5 +1,5 @@
-from kalshi.auth import request_headers
-from kalshi.constants import api_url
+from fastkalshi.auth import request_headers
+from fastkalshi.constants import api_url
 
 from .rest import get
 

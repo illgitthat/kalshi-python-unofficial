@@ -1,5 +1,5 @@
 [project]
-name = "kalshi-python-unofficial"
+name = "fastkalshi"
 version = "0.2.0"
 description = "A lightweight, unofficial Python client for the Kalshi API"
 readme = "README.md"
@@ -26,8 +26,8 @@ analytics = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/illgitthat/kalshi-python-unofficial"
-Repository = "https://github.com/illgitthat/kalshi-python-unofficial"
+Homepage = "https://github.com/illgitthat/fastkalshi"
+Repository = "https://github.com/illgitthat/fastkalshi"
 
 [dependency-groups]
 dev = [
@@ -51,7 +51,7 @@ requires = ["uv_build>=0.12.0,<0.13.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = "kalshi"
+module-name = "fastkalshi"
 module-root = ""
 source-include = [
     "docs/**",
@@ -66,8 +66,8 @@ markers = [
 ]
 
 [tool.pyright]
-include = ["kalshi"]
-exclude = ["kalshi/utils.py"]
+include = ["fastkalshi"]
+exclude = ["fastkalshi/utils.py"]
 pythonVersion = "3.14"
 
 [tool.ruff]

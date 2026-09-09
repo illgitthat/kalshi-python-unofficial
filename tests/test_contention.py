@@ -2,10 +2,10 @@ import importlib
 import threading
 from unittest.mock import Mock
 
-from kalshi import constants
-from kalshi.rest import rest
-from kalshi.rest.market import Market
-from kalshi.rest.portfolio import Portfolio
+from fastkalshi import constants
+from fastkalshi.rest import rest
+from fastkalshi.rest.market import Market
+from fastkalshi.rest.portfolio import Portfolio
 
 
 def test_discovery_request_does_not_block_mutation_session(monkeypatch):
@@ -29,7 +29,7 @@ def test_discovery_request_does_not_block_mutation_session(monkeypatch):
     )
     monkeypatch.setattr(rest.SESSION, "request", slow_read)
     monkeypatch.setattr(rest.WRITE_SESSION, "request", write_request)
-    portfolio_module = importlib.import_module("kalshi.rest.portfolio")
+    portfolio_module = importlib.import_module("fastkalshi.rest.portfolio")
     monkeypatch.setattr(
         portfolio_module,
         "request_headers",

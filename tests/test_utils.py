@@ -3,10 +3,10 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 
-from kalshi import utils
-from kalshi.rest import portfolio
-from kalshi.rest.rest import KalshiTransportError
-from kalshi.utils import (
+from fastkalshi import utils
+from fastkalshi.rest import portfolio
+from fastkalshi.rest.rest import KalshiTransportError
+from fastkalshi.utils import (
     calculate_volume_stats,
     calculate_vwap,
     cancel_all_resting_orders,

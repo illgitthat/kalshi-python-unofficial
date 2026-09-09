@@ -1,9 +1,9 @@
 import pytest
 
-from kalshi.rest.market import Market
-from kalshi.rest.milestone import Milestone
-from kalshi.rest.pagination import KalshiPaginationError, paginate
-from kalshi.rest.portfolio import Portfolio
+from fastkalshi.rest.market import Market
+from fastkalshi.rest.milestone import Milestone
+from fastkalshi.rest.pagination import KalshiPaginationError, paginate
+from fastkalshi.rest.portfolio import Portfolio
 
 
 def test_paginate_preserves_filters_and_stops_on_empty_cursor():

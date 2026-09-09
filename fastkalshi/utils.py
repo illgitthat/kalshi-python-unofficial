@@ -43,8 +43,8 @@ def get_all_trades(
     Returns:
         List of all trades
     """
-    from kalshi.rest.market import Market
-    from kalshi.rest.pagination import paginate
+    from fastkalshi.rest.market import Market
+    from fastkalshi.rest.pagination import paginate
 
     market = Market()
     return list(
@@ -83,8 +83,8 @@ def get_all_orders(
     Returns:
         List of all orders
     """
-    from kalshi.rest import portfolio
-    from kalshi.rest.pagination import paginate
+    from fastkalshi.rest import portfolio
+    from fastkalshi.rest.pagination import paginate
 
     return list(
         paginate(
@@ -119,7 +119,7 @@ def cancel_all_resting_orders(
     Returns:
         Dictionary with cancellation results
     """
-    from kalshi.rest import (
+    from fastkalshi.rest import (
         KalshiAPIError,
         KalshiResponseError,
         KalshiTransportError,

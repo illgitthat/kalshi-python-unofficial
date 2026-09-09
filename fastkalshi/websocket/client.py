@@ -6,8 +6,8 @@ import orjson
 import websockets
 from websockets.exceptions import WebSocketException
 
-from kalshi import constants
-from kalshi.auth import request_headers
+from fastkalshi import constants
+from fastkalshi.auth import request_headers
 
 logger = logging.getLogger(__name__)
 

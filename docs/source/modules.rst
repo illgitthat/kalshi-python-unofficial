@@ -1,7 +1,7 @@
-kalshi
-======
+fastkalshi
+==========
 
 .. toctree::
    :maxdepth: 4
 
-   kalshi
+   fastkalshi

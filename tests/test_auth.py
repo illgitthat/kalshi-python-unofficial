@@ -3,7 +3,7 @@ import base64
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
-from kalshi.auth import Auth
+from fastkalshi.auth import Auth
 
 
 def test_request_headers_sign_uppercase_path_without_query(tmp_path):

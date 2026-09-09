@@ -1,4 +1,4 @@
-# kalshi-python-unofficial
+# fastkalshi
 
 A small, dictionary-based Python client for Kalshi REST and WebSocket APIs.
 It follows Kalshi OpenAPI 3.30.0 and the AsyncAPI specification dated
@@ -7,12 +7,12 @@ September 9, 2026.
 ## Install
 
 ```bash
-uv add kalshi-python-unofficial
+uv add fastkalshi
 ```
 
 Python 3.14 or newer is required. Demo is the default environment.
 Install the optional plotting utilities with
-`uv add "kalshi-python-unofficial[analytics]"`.
+`uv add "fastkalshi[analytics]"`.
 
 For local development:
 
@@ -29,10 +29,10 @@ and AsyncAPI files. It detects endpoint and WebSocket contract drift without
 making normal tests depend on the network.
 
 ```python
-import kalshi
+import fastkalshi
 
-kalshi.constants.use_prod()
-kalshi.auth.set_key("API_KEY_ID", "path/to/private-key.pem")
+fastkalshi.constants.use_prod()
+fastkalshi.auth.set_key("API_KEY_ID", "path/to/private-key.pem")
 ```
 
 Demo and production credentials are not interchangeable.
@@ -40,7 +40,7 @@ Demo and production credentials are not interchangeable.
 ## Discover markets and events
 
 ```python
-from kalshi.rest import market
+from fastkalshi.rest import market
 
 live_markets = market.GetLiveMarkets(limit=100)
 upcoming_events = market.GetUpcomingEvents(with_milestones=True)
@@ -63,7 +63,7 @@ for item in market.IterMarkets(status="open", max_pages=3):
 V2 orders use fixed-point strings. `bid` buys YES and `ask` sells YES.
 
 ```python
-from kalshi.rest import portfolio
+from fastkalshi.rest import portfolio
 
 order = portfolio.CreateOrder(
     ticker="KXEXAMPLE-26-T1",
@@ -80,7 +80,7 @@ order = portfolio.CreateOrder(
 
 The client never retries failed requests. A caller must reconcile an
 uncertain write by `client_order_id` before it sends another order.
-HTTP failures raise `kalshi.rest.KalshiAPIError` with the API status and
+HTTP failures raise `fastkalshi.rest.KalshiAPIError` with the API status and
 structured fields plus the raw payload. Transport failures raise
 `KalshiTransportError`; its `outcome_unknown` flag is true for mutations that
 may have reached Kalshi.
@@ -96,7 +96,7 @@ connection before a time-sensitive order.
 ## Subaccounts and milestones
 
 ```python
-from kalshi.rest import milestone, portfolio
+from fastkalshi.rest import milestone, portfolio
 
 balances = portfolio.GetSubaccountBalances()
 milestones = milestone.GetMilestones(limit=100)
@@ -112,7 +112,7 @@ are required, and a returned transfer ID must be polled before using the funds.
 ## Rate-limit information
 
 ```python
-from kalshi.rest import account
+from fastkalshi.rest import account
 
 limits = account.GetLimits()
 costs = account.GetEndpointCosts()
@@ -130,10 +130,10 @@ reconciliation; it does not prove that an order is absent.
 
 ```python
 import asyncio
-import kalshi
+import fastkalshi
 
 
-class Feed(kalshi.websocket.Client):
+class Feed(fastkalshi.websocket.Client):
     async def on_open(self):
         await self.subscribe(
             ["orderbook_delta"],
@@ -145,7 +145,7 @@ class Feed(kalshi.websocket.Client):
         print(message)
 
 
-kalshi.constants.use_prod()
+fastkalshi.constants.use_prod()
 asyncio.run(Feed().run_forever())
 ```
 

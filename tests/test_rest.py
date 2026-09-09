@@ -4,7 +4,7 @@ import orjson
 import pytest
 import requests
 
-from kalshi.rest import rest
+from fastkalshi.rest import rest
 
 
 def response(status, payload=None, *, text="", reason=""):

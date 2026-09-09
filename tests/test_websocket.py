@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from kalshi.websocket import Client, KalshiWebSocketError
+from fastkalshi.websocket import Client, KalshiWebSocketError
 
 MARKET_A_ID = "00000000-0000-0000-0000-000000000001"
 MARKET_B_ID = "00000000-0000-0000-0000-000000000002"
@@ -265,7 +265,7 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
             ]
         )
         connections = iter([first, second])
-        module = importlib.import_module("kalshi.websocket.client")
+        module = importlib.import_module("fastkalshi.websocket.client")
         monkeypatch.setattr(module, "request_headers", lambda method, url: {})
         monkeypatch.setattr(
             module.websockets,
@@ -513,7 +513,7 @@ def test_invalid_message_envelope_reports_protocol_error_and_closes():
 def test_connect_reports_clean_close_once(monkeypatch):
     async def run():
         websocket = FakeWebSocket(close_code=1000, close_reason="clean")
-        module = importlib.import_module("kalshi.websocket.client")
+        module = importlib.import_module("fastkalshi.websocket.client")
         monkeypatch.setattr(module, "request_headers", lambda method, url: {})
         monkeypatch.setattr(
             module.websockets,
@@ -543,7 +543,7 @@ def test_connect_reports_protocol_close_once(monkeypatch):
                 )
             ]
         )
-        module = importlib.import_module("kalshi.websocket.client")
+        module = importlib.import_module("fastkalshi.websocket.client")
         monkeypatch.setattr(module, "request_headers", lambda method, url: {})
         monkeypatch.setattr(
             module.websockets,

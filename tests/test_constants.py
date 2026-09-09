@@ -1,4 +1,4 @@
-from kalshi import constants
+from fastkalshi import constants
 
 
 def test_environment_switches_rest_and_websocket_hosts():

@@ -3,12 +3,12 @@ from unittest.mock import Mock
 
 import pytest
 
-from kalshi import constants
-from kalshi.rest import rest
-from kalshi.rest.exchange import Exchange
-from kalshi.rest.market import Market
-from kalshi.rest.milestone import Milestone
-from kalshi.rest.portfolio import Portfolio
+from fastkalshi import constants
+from fastkalshi.rest import rest
+from fastkalshi.rest.exchange import Exchange
+from fastkalshi.rest.market import Market
+from fastkalshi.rest.milestone import Milestone
+from fastkalshi.rest.portfolio import Portfolio
 
 
 @pytest.fixture
@@ -19,8 +19,8 @@ def recorded_request(monkeypatch):
     monkeypatch.setattr(rest.SESSION, "request", request)
     monkeypatch.setattr(rest.WRITE_SESSION, "request", request)
 
-    portfolio_module = importlib.import_module("kalshi.rest.portfolio")
-    market_module = importlib.import_module("kalshi.rest.market")
+    portfolio_module = importlib.import_module("fastkalshi.rest.portfolio")
+    market_module = importlib.import_module("fastkalshi.rest.market")
     for module in (portfolio_module, market_module):
         monkeypatch.setattr(
             module,
@@ -86,7 +86,7 @@ def test_portfolio_warmup_uses_mutation_session(monkeypatch):
     write_request = Mock(return_value=response)
     monkeypatch.setattr(rest.SESSION, "request", read_request)
     monkeypatch.setattr(rest.WRITE_SESSION, "request", write_request)
-    portfolio_module = importlib.import_module("kalshi.rest.portfolio")
+    portfolio_module = importlib.import_module("fastkalshi.rest.portfolio")
     monkeypatch.setattr(
         portfolio_module,
         "request_headers",
@@ -474,7 +474,7 @@ def test_cancel_all_orders_uses_subaccount_scope(recorded_request):
 def test_cancel_all_orders_accepts_empty_204_response(monkeypatch):
     response = Mock(status_code=204, content=b"")
     monkeypatch.setattr(rest.WRITE_SESSION, "request", Mock(return_value=response))
-    module = importlib.import_module("kalshi.rest.portfolio")
+    module = importlib.import_module("fastkalshi.rest.portfolio")
     monkeypatch.setattr(module, "request_headers", lambda method, url: {})
 
     assert Portfolio().CancelAllOrders(subaccount=4) is None
