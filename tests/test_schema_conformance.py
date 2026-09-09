@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import urllib.request
+from typing import get_args
 
 import pytest
 import yaml
@@ -13,6 +14,7 @@ from fastkalshi.rest.milestone import Milestone
 from fastkalshi.rest.portfolio import Portfolio
 from fastkalshi.rest.structured_target import StructuredTarget
 from fastkalshi.websocket import Client, KalshiWebSocketError
+from fastkalshi.websocket.client import SubscriptionAction
 
 pytestmark = pytest.mark.schema
 
@@ -279,6 +281,24 @@ def test_orderbook_required_fields_match_current_asyncapi():
             )["minimum"]
             == 1
         )
+
+
+def test_subscription_actions_match_current_asyncapi():
+    schema = _load_schema(ASYNCAPI_URL)
+    actions = set()
+
+    for message_name in (
+        "updateSubscriptionCommand",
+        "cfbenchmarksUpdateSubscriptionCommand",
+        "pythUpdateSubscriptionCommand",
+    ):
+        message = schema["components"]["messages"][message_name]
+        payload = _resolve(schema, message["payload"])
+        params = _resolve(schema, payload["properties"]["params"])
+        action = _resolve(schema, params["properties"]["action"])
+        actions.update(action["enum"])
+
+    assert set(get_args(SubscriptionAction)) == actions
 
 
 def test_client_rejects_missing_asyncapi_orderbook_fields():

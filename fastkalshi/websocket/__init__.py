@@ -1,3 +1,3 @@
-from .client import Client, KalshiWebSocketError
+from .client import Client, KalshiWebSocketError, SubscriptionAction
 
-__all__ = ["Client", "KalshiWebSocketError"]
+__all__ = ["Client", "KalshiWebSocketError", "SubscriptionAction"]

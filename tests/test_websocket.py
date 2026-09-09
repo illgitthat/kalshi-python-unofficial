@@ -101,12 +101,54 @@ def test_concurrent_commands_reserve_unique_ids_before_sending():
         client.ws = FakeWebSocket()
 
         command_ids = await asyncio.gather(
-            client.send_command("list_subscriptions"),
-            client.send_command("list_subscriptions"),
+            client.list_subscriptions(),
+            client.list_subscriptions(),
         )
 
         assert set(command_ids) == {1, 2}
         assert {message["id"] for message in client.ws.messages} == {1, 2}
+
+    asyncio.run(run())
+
+
+def test_subscription_control_methods_build_current_commands():
+    async def run():
+        client = Client()
+        client.ws = FakeWebSocket()
+
+        assert await client.unsubscribe([3, 5]) == 1
+        assert (
+            await client.update_subscription(
+                7,
+                "add_markets",
+                market_tickers=["KXONE", "KXTWO"],
+                send_initial_snapshot=True,
+            )
+            == 2
+        )
+        assert await client.list_subscriptions() == 3
+
+        assert client.ws.messages == [
+            {
+                "id": 1,
+                "cmd": "unsubscribe",
+                "params": {"sids": [3, 5]},
+            },
+            {
+                "id": 2,
+                "cmd": "update_subscription",
+                "params": {
+                    "sid": 7,
+                    "action": "add_markets",
+                    "market_tickers": ["KXONE", "KXTWO"],
+                    "send_initial_snapshot": True,
+                },
+            },
+            {
+                "id": 3,
+                "cmd": "list_subscriptions",
+            },
+        ]
 
     asyncio.run(run())
 

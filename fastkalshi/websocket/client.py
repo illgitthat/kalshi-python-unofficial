@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import orjson
 import websockets
@@ -10,6 +10,18 @@ from fastkalshi import constants
 from fastkalshi.auth import request_headers
 
 logger = logging.getLogger(__name__)
+
+SubscriptionAction = Literal[
+    "add_markets",
+    "delete_markets",
+    "get_snapshot",
+    "subscribe_indices",
+    "unsubscribe_indices",
+    "indexlist",
+    "subscribe_underlyings",
+    "unsubscribe_underlyings",
+    "underlying_list",
+]
 
 
 class KalshiWebSocketError(RuntimeError):
@@ -114,7 +126,11 @@ class Client:
             message.get("seq"),
         )
 
-    async def send_command(self, command: str, params: dict | None = None):
+    async def send_command(
+        self,
+        command: str,
+        params: dict[str, Any] | None = None,
+    ):
         if self.ws is None:
             raise RuntimeError("WebSocket is not connected")
         command_id = self.message_id
@@ -142,6 +158,46 @@ class Client:
         if "orderbook_delta" in channels:
             params["use_yes_price"] = use_yes_price
         return await self.send_command("subscribe", params)
+
+    async def unsubscribe(self, sids: list[int]):
+        return await self.send_command("unsubscribe", {"sids": sids})
+
+    async def update_subscription(
+        self,
+        sid: int,
+        action: SubscriptionAction,
+        *,
+        market_ticker: str | None = None,
+        market_tickers: list[str] | None = None,
+        market_id: str | None = None,
+        market_ids: list[str] | None = None,
+        send_initial_snapshot: bool | None = None,
+        index_ids: list[str] | None = None,
+        underlying_tickers: list[str] | None = None,
+    ):
+        params: dict[str, Any] = {
+            "sid": sid,
+            "action": action,
+        }
+        params.update(
+            {
+                key: value
+                for key, value in {
+                    "market_ticker": market_ticker,
+                    "market_tickers": market_tickers,
+                    "market_id": market_id,
+                    "market_ids": market_ids,
+                    "send_initial_snapshot": send_initial_snapshot,
+                    "index_ids": index_ids,
+                    "underlying_tickers": underlying_tickers,
+                }.items()
+                if value is not None
+            }
+        )
+        return await self.send_command("update_subscription", params)
+
+    async def list_subscriptions(self):
+        return await self.send_command("list_subscriptions")
 
     async def handler(self):
         websocket = self.ws

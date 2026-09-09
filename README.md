@@ -168,6 +168,9 @@ asyncio.run(Feed().run_forever())
 the same subscription code restores the feed. A sequence gap drops the
 out-of-sequence message and closes the socket so every subscribed market can
 restart from a fresh snapshot.
+Use `unsubscribe()`, `update_subscription()`, and `list_subscriptions()` for
+typed subscription control. `send_command()` remains available for commands
+that are not yet represented by a dedicated method.
 
 ## Compatibility
 
