@@ -1,5 +1,6 @@
 from kalshi.constants import api_url
 
+from .pagination import paginate
 from .rest import drop_none, get
 
 
@@ -44,6 +45,14 @@ class Milestone:
         return get(
             api_url(f"live_data/milestone/{milestone_id}"),
             include_player_stats=include_player_stats,
+        )
+
+    def IterMilestones(self, *, max_pages: int | None = None, **params):
+        return paginate(
+            self.GetMilestones,
+            "milestones",
+            max_pages=max_pages,
+            **params,
         )
 
 

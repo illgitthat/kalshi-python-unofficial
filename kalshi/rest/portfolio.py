@@ -1,7 +1,8 @@
 from kalshi.auth import request_headers
 from kalshi.constants import api_url
 
-from .rest import WRITE_SESSION, delete, drop_none, get, post
+from .pagination import paginate
+from .rest import WRITE_SESSION, delete, drop_none, get, post, put
 
 
 class Portfolio:
@@ -25,6 +26,19 @@ class Portfolio:
         return delete(
             url,
             headers=request_headers("DELETE", url),
+            body=data,
+            **kwargs,
+        )
+
+    def _authenticated_put_request(
+        self,
+        url: str,
+        data: dict | None = None,
+        **kwargs,
+    ):
+        return put(
+            url,
+            headers=request_headers("PUT", url),
             body=data,
             **kwargs,
         )
@@ -115,21 +129,151 @@ class Portfolio:
         url = api_url(f"portfolio/orders/{order_id}")
         return self._authenticated_get_request(url)
 
+    def GetOrderQueuePositions(
+        self,
+        market_tickers: list[str] | None = None,
+        event_ticker: str | None = None,
+        subaccount: int | None = None,
+    ):
+        if not market_tickers and event_ticker is None:
+            raise ValueError("market_tickers or event_ticker is required")
+        url = api_url("portfolio/orders/queue_positions")
+        return self._authenticated_get_request(
+            url,
+            **drop_none(
+                {
+                    "market_tickers": (
+                        ",".join(market_tickers) if market_tickers else None
+                    ),
+                    "event_ticker": event_ticker,
+                    "subaccount": subaccount,
+                }
+            ),
+        )
+
+    def GetOrderQueuePosition(self, order_id: str):
+        url = api_url(f"portfolio/orders/{order_id}/queue_position")
+        return self._authenticated_get_request(url)
+
+    def GetOrderGroups(self, subaccount: int | None = None):
+        url = api_url("portfolio/order_groups")
+        return self._authenticated_get_request(
+            url,
+            **drop_none({"subaccount": subaccount}),
+        )
+
+    def CreateOrderGroup(
+        self,
+        contracts_limit_fp: str,
+        subaccount: int | None = None,
+        exchange_index: int | None = None,
+    ):
+        url = api_url("portfolio/order_groups/create")
+        return self._authenticated_post_request(
+            url,
+            drop_none(
+                {
+                    "contracts_limit_fp": contracts_limit_fp,
+                    "subaccount": subaccount,
+                    "exchange_index": exchange_index,
+                }
+            ),
+        )
+
+    def GetOrderGroup(
+        self,
+        order_group_id: str,
+        subaccount: int | None = None,
+    ):
+        url = api_url(f"portfolio/order_groups/{order_group_id}")
+        return self._authenticated_get_request(
+            url,
+            **drop_none({"subaccount": subaccount}),
+        )
+
+    def DeleteOrderGroup(
+        self,
+        order_group_id: str,
+        subaccount: int | None = None,
+        exchange_index: int | None = None,
+    ):
+        url = api_url(f"portfolio/order_groups/{order_group_id}")
+        return self._authenticated_del_request(
+            url,
+            **drop_none(
+                {
+                    "subaccount": subaccount,
+                    "exchange_index": exchange_index,
+                }
+            ),
+        )
+
+    def ResetOrderGroup(
+        self,
+        order_group_id: str,
+        subaccount: int | None = None,
+        exchange_index: int | None = None,
+    ):
+        url = api_url(f"portfolio/order_groups/{order_group_id}/reset")
+        return self._authenticated_put_request(
+            url,
+            {},
+            **drop_none(
+                {
+                    "subaccount": subaccount,
+                    "exchange_index": exchange_index,
+                }
+            ),
+        )
+
+    def TriggerOrderGroup(
+        self,
+        order_group_id: str,
+        subaccount: int | None = None,
+        exchange_index: int | None = None,
+    ):
+        url = api_url(f"portfolio/order_groups/{order_group_id}/trigger")
+        return self._authenticated_put_request(
+            url,
+            {},
+            **drop_none(
+                {
+                    "subaccount": subaccount,
+                    "exchange_index": exchange_index,
+                }
+            ),
+        )
+
+    def UpdateOrderGroupLimit(
+        self,
+        order_group_id: str,
+        contracts_limit_fp: str,
+        subaccount: int | None = None,
+        exchange_index: int | None = None,
+    ):
+        url = api_url(f"portfolio/order_groups/{order_group_id}/limit")
+        return self._authenticated_put_request(
+            url,
+            {"contracts_limit_fp": contracts_limit_fp},
+            **drop_none(
+                {
+                    "subaccount": subaccount,
+                    "exchange_index": exchange_index,
+                }
+            ),
+        )
+
     def GetPositions(
         self,
         cursor: str | None = None,
         limit: int = 100,
+        *,
         count_filter: str | None = None,
-        settlement_status: str | None = None,
         ticker: str | None = None,
         event_ticker: str | None = None,
         subaccount: int | None = None,
         exchange_index: int | None = None,
     ):
-        if settlement_status is not None:
-            raise ValueError(
-                "settlement_status is no longer supported by the Kalshi API"
-            )
         url = api_url("portfolio/positions")
         return self._authenticated_get_request(
             url,
@@ -360,6 +504,35 @@ class Portfolio:
         return self._authenticated_get_request(
             url,
             **drop_none({"limit": limit, "cursor": cursor}),
+        )
+
+    def IterOrders(self, *, max_pages: int | None = None, **params):
+        return paginate(
+            self.GetOrders,
+            "orders",
+            max_pages=max_pages,
+            **params,
+        )
+
+    def IterFills(self, *, max_pages: int | None = None, **params):
+        return paginate(
+            self.GetFills,
+            "fills",
+            max_pages=max_pages,
+            **params,
+        )
+
+    def IterSubaccountTransfers(
+        self,
+        *,
+        max_pages: int | None = None,
+        **params,
+    ):
+        return paginate(
+            self.GetSubaccountTransfers,
+            "transfers",
+            max_pages=max_pages,
+            **params,
         )
 
 

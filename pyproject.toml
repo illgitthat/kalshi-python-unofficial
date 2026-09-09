@@ -33,6 +33,7 @@ Repository = "https://github.com/illgitthat/kalshi-python-unofficial"
 dev = [
     "matplotlib>=3.10",
     "pandas>=2.2",
+    "pre-commit>=4",
     "pyright>=1.1.400",
     "pytest>=8",
     "pytest-cov>=6",

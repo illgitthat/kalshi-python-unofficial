@@ -31,6 +31,7 @@ class Client:
     def __init__(self):
         self.message_id = 1
         self.ws = None
+        self._orderbook_snapshots = {}
         self._sequence_by_subscription = {}
 
     async def connect(self, url: str | None = None):
@@ -43,6 +44,7 @@ class Client:
                 compression=None,
             ) as websocket:
                 self.ws = websocket
+                self._orderbook_snapshots.clear()
                 self._sequence_by_subscription.clear()
                 await self.on_open()
                 await self.handler()
@@ -165,7 +167,36 @@ class Client:
                 return
             self._sequence_by_subscription[subscription_id] = sequence
 
-        if message.get("type") == "error":
+        message_type = message.get("type")
+        if message_type in {"orderbook_snapshot", "orderbook_delta"}:
+            payload = message.get("msg")
+            market_key = (
+                payload.get("market_ticker") or payload.get("market_id")
+                if isinstance(payload, dict)
+                else None
+            )
+            if subscription_id is None or market_key is None:
+                await self.on_error(
+                    KalshiWebSocketError(
+                        f"{message_type} did not contain a market identifier"
+                    )
+                )
+                if self.ws is not None:
+                    await self.ws.close(
+                        code=1002,
+                        reason="Invalid orderbook message",
+                    )
+                return
+            ready_markets = self._orderbook_snapshots.setdefault(
+                subscription_id,
+                set(),
+            )
+            if message_type == "orderbook_snapshot":
+                ready_markets.add(market_key)
+            elif market_key not in ready_markets:
+                return
+
+        if message_type == "error":
             payload = message.get("msg") or {}
             await self.on_error(
                 KalshiWebSocketError(

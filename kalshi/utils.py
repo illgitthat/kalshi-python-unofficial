@@ -29,6 +29,7 @@ def get_all_trades(
     ticker: str | None = None,
     min_ts: int | None = None,
     max_ts: int | None = None,
+    max_pages: int | None = None,
 ):
     """
     Get all trades with pagination support.
@@ -43,23 +44,20 @@ def get_all_trades(
         List of all trades
     """
     from kalshi.rest.market import Market
+    from kalshi.rest.pagination import paginate
 
     market = Market()
-    all_trades = []
-    cursor = None
-    seen_cursors = set()
-    while True:
-        resp = market.GetTrades(
-            limit=limit, cursor=cursor, ticker=ticker, min_ts=min_ts, max_ts=max_ts
+    return list(
+        paginate(
+            market.GetTrades,
+            "trades",
+            max_pages=max_pages,
+            limit=limit,
+            ticker=ticker,
+            min_ts=min_ts,
+            max_ts=max_ts,
         )
-        all_trades.extend(resp.get("trades", []))
-        cursor = resp.get("cursor")
-        if not cursor:
-            break
-        if cursor in seen_cursors:
-            raise RuntimeError("Kalshi returned a repeated trades cursor")
-        seen_cursors.add(cursor)
-    return all_trades
+    )
 
 
 def get_all_orders(
@@ -69,6 +67,7 @@ def get_all_orders(
     event_ticker: str | None = None,
     subaccount: int | None = None,
     exchange_index: int | None = None,
+    max_pages: int | None = None,
 ):
     """
     Get all orders with pagination support.
@@ -85,28 +84,21 @@ def get_all_orders(
         List of all orders
     """
     from kalshi.rest import portfolio
+    from kalshi.rest.pagination import paginate
 
-    all_orders = []
-    cursor = None
-    seen_cursors = set()
-    while True:
-        resp = portfolio.GetOrders(
+    return list(
+        paginate(
+            portfolio.GetOrders,
+            "orders",
+            max_pages=max_pages,
             limit=limit,
-            cursor=cursor,
             status=status,
             ticker=ticker,
             event_ticker=event_ticker,
             subaccount=subaccount,
             exchange_index=exchange_index,
         )
-        all_orders.extend(resp.get("orders", []))
-        cursor = resp.get("cursor")
-        if not cursor:
-            break
-        if cursor in seen_cursors:
-            raise RuntimeError("Kalshi returned a repeated orders cursor")
-        seen_cursors.add(cursor)
-    return all_orders
+    )
 
 
 def cancel_all_resting_orders(

@@ -1,6 +1,7 @@
 from kalshi.auth import request_headers
 from kalshi.constants import api_url
 
+from .pagination import paginate
 from .rest import drop_none, get
 
 
@@ -45,22 +46,32 @@ class Market:
             with_nested_markets=with_nested_markets,
         )
 
+    def GetEventLiveData(
+        self,
+        event_ticker: str,
+        range: str | None = None,
+    ):
+        return get(
+            api_url(f"live_data/events/{event_ticker}"),
+            **drop_none({"range": range}),
+        )
+
     def GetMarkets(
         self,
         limit: int = 100,
         cursor: str | None = None,
+        *,
         event_ticker: str | None = None,
         series_ticker: str | None = None,
-        max_close_ts: int | None = None,
-        min_close_ts: int | None = None,
-        status: str | None = None,
-        tickers: list[str] | None = None,
-        *,
         min_created_ts: int | None = None,
         max_created_ts: int | None = None,
         min_updated_ts: int | None = None,
+        max_close_ts: int | None = None,
+        min_close_ts: int | None = None,
         min_settled_ts: int | None = None,
         max_settled_ts: int | None = None,
+        status: str | None = None,
+        tickers: list[str] | None = None,
         mve_filter: str | None = None,
     ):
         params = drop_none(
@@ -154,6 +165,22 @@ class Market:
             status="unopened",
             with_nested_markets=with_nested_markets,
             **kwargs,
+        )
+
+    def IterMarkets(self, *, max_pages: int | None = None, **params):
+        return paginate(
+            self.GetMarkets,
+            "markets",
+            max_pages=max_pages,
+            **params,
+        )
+
+    def IterEvents(self, *, max_pages: int | None = None, **params):
+        return paginate(
+            self.GetEvents,
+            "events",
+            max_pages=max_pages,
+            **params,
         )
 
 

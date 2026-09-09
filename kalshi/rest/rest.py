@@ -134,5 +134,9 @@ def post(url, headers=None, body=None, **kwargs):
     return request("POST", url, headers=headers, params=kwargs, body=body)
 
 
+def put(url, headers=None, body=None, **kwargs):
+    return request("PUT", url, headers=headers, params=kwargs, body=body)
+
+
 def delete(url, headers=None, body=None, **kwargs):
     return request("DELETE", url, headers=headers, params=kwargs, body=body)

@@ -18,6 +18,7 @@ For local development:
 
 ```bash
 uv sync
+uv run pre-commit install
 uv run pytest
 uv build
 ```
@@ -43,6 +44,13 @@ upcoming_events = market.GetUpcomingEvents(with_milestones=True)
 Event status is derived from its child markets. Use `GetLiveMarkets()` or
 `GetUpcomingMarkets()` when exact market status matters. Paginated responses
 include the next Kalshi cursor.
+
+Bounded iterators handle cursors and reject cursor cycles:
+
+```python
+for item in market.IterMarkets(status="open", max_pages=3):
+    print(item["ticker"])
+```
 
 ## Trade with V2 orders
 
@@ -101,6 +109,9 @@ costs = account.GetEndpointCosts()
 
 These methods expose Kalshi's current account buckets and endpoint token
 costs. The SDK does not add sleeps or automatic rate limiting.
+
+Order groups, queue positions, event live data, and cancel-all controls are
+available from `portfolio` and `market`.
 
 ## WebSocket
 

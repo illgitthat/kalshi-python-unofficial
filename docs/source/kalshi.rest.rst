@@ -44,6 +44,14 @@ kalshi.rest.milestone module
    :undoc-members:
    :show-inheritance:
 
+kalshi.rest.pagination module
+-----------------------------
+
+.. automodule:: kalshi.rest.pagination
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 kalshi.rest.portfolio module
 ----------------------------
 

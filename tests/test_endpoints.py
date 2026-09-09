@@ -49,27 +49,6 @@ def test_live_event_discovery_uses_current_filters(recorded_request):
     }
 
 
-def test_get_markets_preserves_legacy_positional_filters(recorded_request):
-    Market().GetMarkets(
-        100,
-        None,
-        None,
-        None,
-        2_000_000_000,
-        1_000_000_000,
-        "open",
-        ["KXTEST"],
-    )
-
-    assert recorded_request.call_args.kwargs["params"] == {
-        "limit": 100,
-        "max_close_ts": 2_000_000_000,
-        "min_close_ts": 1_000_000_000,
-        "status": "open",
-        "tickers": "KXTEST",
-    }
-
-
 def test_create_order_uses_v2_fixed_point_payload(recorded_request):
     assert Portfolio().CreateOrder(
         ticker="KXTEST",
@@ -172,14 +151,10 @@ def test_decrease_order_requires_one_quantity(quantities):
         Portfolio().DecreaseOrder("1", **quantities)
 
 
-def test_positions_preserve_legacy_positional_filters(recorded_request):
+def test_positions_send_current_filters(recorded_request):
     Portfolio().GetPositions(
-        None,
-        100,
-        None,
-        None,
-        "KXTEST",
-        "KXEVENT",
+        ticker="KXTEST",
+        event_ticker="KXEVENT",
     )
 
     assert recorded_request.call_args.kwargs["params"] == {
@@ -187,14 +162,6 @@ def test_positions_preserve_legacy_positional_filters(recorded_request):
         "ticker": "KXTEST",
         "event_ticker": "KXEVENT",
     }
-
-
-def test_removed_position_settlement_filter_fails_explicitly():
-    with pytest.raises(
-        ValueError,
-        match="settlement_status is no longer supported",
-    ):
-        Portfolio().GetPositions(settlement_status="settled")
 
 
 def test_subaccount_transfer_preserves_id_and_units(recorded_request):
@@ -224,3 +191,78 @@ def test_milestone_live_data_uses_preferred_endpoint(recorded_request):
         "https://external-api.demo.kalshi.co/trade-api/v2/live_data/milestone/milestone-1",
     )
     assert call.kwargs["params"] == {"include_player_stats": "true"}
+
+
+def test_event_live_data_uses_event_endpoint(recorded_request):
+    Market().GetEventLiveData("KXEVENT", range="game")
+
+    call = recorded_request.call_args
+    assert call.args[:2] == (
+        "GET",
+        "https://external-api.demo.kalshi.co/trade-api/v2/live_data/events/KXEVENT",
+    )
+    assert call.kwargs["params"] == {"range": "game"}
+
+
+def test_queue_positions_preserve_filters(recorded_request):
+    Portfolio().GetOrderQueuePositions(
+        market_tickers=["KXONE", "KXTWO"],
+        event_ticker="KXEVENT",
+        subaccount=2,
+    )
+
+    assert recorded_request.call_args.kwargs["params"] == {
+        "market_tickers": "KXONE,KXTWO",
+        "event_ticker": "KXEVENT",
+        "subaccount": 2,
+    }
+
+
+def test_queue_positions_require_a_market_or_event():
+    with pytest.raises(
+        ValueError,
+        match="market_tickers or event_ticker is required",
+    ):
+        Portfolio().GetOrderQueuePositions()
+
+
+def test_order_group_create_and_limit_update_use_current_fields(recorded_request):
+    portfolio = Portfolio()
+    portfolio.CreateOrderGroup(
+        contracts_limit_fp="10.00",
+        subaccount=2,
+        exchange_index=1,
+    )
+    create_call = recorded_request.call_args
+
+    portfolio.UpdateOrderGroupLimit(
+        "group-1",
+        contracts_limit_fp="20.00",
+        subaccount=2,
+        exchange_index=1,
+    )
+    update_call = recorded_request.call_args
+
+    assert create_call.args[0] == "POST"
+    assert create_call.kwargs["json"] == {
+        "contracts_limit_fp": "10.00",
+        "subaccount": 2,
+        "exchange_index": 1,
+    }
+    assert update_call.args[0] == "PUT"
+    assert update_call.kwargs["json"] == {"contracts_limit_fp": "20.00"}
+    assert update_call.kwargs["params"] == {
+        "subaccount": 2,
+        "exchange_index": 1,
+    }
+
+
+def test_cancel_all_orders_uses_subaccount_scope(recorded_request):
+    Portfolio().CancelAllOrders(subaccount=4)
+
+    call = recorded_request.call_args
+    assert call.args[:2] == (
+        "DELETE",
+        "https://external-api.demo.kalshi.co/trade-api/v2/portfolio/events/orders",
+    )
+    assert call.kwargs["params"] == {"subaccount": 4}
