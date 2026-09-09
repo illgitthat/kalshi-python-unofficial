@@ -139,6 +139,46 @@ def test_cancel_order_preserves_routing_context(recorded_request):
     }
 
 
+def test_amend_order_splits_subaccount_query_and_exchange_body(recorded_request):
+    Portfolio().AmendOrder(
+        "order-1",
+        ticker="KXTEST",
+        side="bid",
+        price="0.5000",
+        count="2.00",
+        subaccount=3,
+        exchange_index=1,
+    )
+
+    call = recorded_request.call_args
+    assert call.kwargs["params"] == {"subaccount": 3}
+    assert call.kwargs["json"] == {
+        "ticker": "KXTEST",
+        "side": "bid",
+        "price": "0.5000",
+        "count": "2.00",
+        "exchange_index": 1,
+    }
+
+
+def test_decrease_order_splits_subaccount_query_and_routing_body(recorded_request):
+    Portfolio().DecreaseOrder(
+        "order-1",
+        reduce_by="1.00",
+        subaccount=3,
+        exchange_index=1,
+        market_ticker="KXTEST",
+    )
+
+    call = recorded_request.call_args
+    assert call.kwargs["params"] == {"subaccount": 3}
+    assert call.kwargs["json"] == {
+        "reduce_by": "1.00",
+        "exchange_index": 1,
+        "market_ticker": "KXTEST",
+    }
+
+
 @pytest.mark.parametrize(
     "quantities",
     [{}, {"reduce_by": "1.00", "reduce_to": "1.00"}],
@@ -255,6 +295,38 @@ def test_order_group_create_and_limit_update_use_current_fields(recorded_request
         "subaccount": 2,
         "exchange_index": 1,
     }
+
+
+def test_order_group_control_request_shapes(recorded_request):
+    portfolio = Portfolio()
+
+    portfolio.GetOrderGroups(subaccount=2)
+    list_call = recorded_request.call_args
+    portfolio.GetOrderGroup("group-1", subaccount=2)
+    get_call = recorded_request.call_args
+    portfolio.DeleteOrderGroup("group-1", subaccount=2, exchange_index=1)
+    delete_call = recorded_request.call_args
+    portfolio.ResetOrderGroup("group-1", subaccount=2, exchange_index=1)
+    reset_call = recorded_request.call_args
+    portfolio.TriggerOrderGroup("group-1", subaccount=2, exchange_index=1)
+    trigger_call = recorded_request.call_args
+
+    assert list_call.args[0] == "GET"
+    assert list_call.kwargs["params"] == {"subaccount": 2}
+    assert get_call.args[0] == "GET"
+    assert get_call.kwargs["params"] == {"subaccount": 2}
+    assert delete_call.args[0] == "DELETE"
+    assert delete_call.kwargs["params"] == {
+        "subaccount": 2,
+        "exchange_index": 1,
+    }
+    for call in (reset_call, trigger_call):
+        assert call.args[0] == "PUT"
+        assert call.kwargs["json"] == {}
+        assert call.kwargs["params"] == {
+            "subaccount": 2,
+            "exchange_index": 1,
+        }
 
 
 def test_cancel_all_orders_uses_subaccount_scope(recorded_request):

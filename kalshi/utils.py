@@ -136,6 +136,16 @@ def cancel_all_resting_orders(
     results = []
     for o in to_cancel:
         oid = o.get("order_id")
+        if not oid:
+            results.append(
+                {
+                    "order_id": None,
+                    "ok": False,
+                    "outcome_unknown": False,
+                    "error": "Order response did not contain order_id",
+                }
+            )
+            continue
         order_subaccount = o.get("subaccount_number")
         if order_subaccount is None:
             order_subaccount = subaccount
@@ -149,9 +159,23 @@ def cancel_all_resting_orders(
                 subaccount=order_subaccount,
                 exchange_index=order_exchange_index,
             )
-            results.append({"order_id": oid, "ok": True, "response": resp})
+            results.append(
+                {
+                    "order_id": oid,
+                    "ok": True,
+                    "outcome_unknown": False,
+                    "response": resp,
+                }
+            )
         except (KalshiAPIError, KalshiResponseError, KalshiTransportError) as e:
-            results.append({"order_id": oid, "ok": False, "error": str(e)})
+            results.append(
+                {
+                    "order_id": oid,
+                    "ok": False,
+                    "outcome_unknown": getattr(e, "outcome_unknown", False),
+                    "error": str(e),
+                }
+            )
     return {
         "requested": len(to_cancel),
         "cancelled": sum(r["ok"] for r in results),

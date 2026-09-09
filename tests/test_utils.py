@@ -5,6 +5,7 @@ import pytest
 
 from kalshi import utils
 from kalshi.rest import portfolio
+from kalshi.rest.rest import KalshiTransportError
 from kalshi.utils import (
     calculate_volume_stats,
     calculate_vwap,
@@ -68,3 +69,36 @@ def test_cancel_orders_preserves_explicit_scope_for_nullable_metadata(monkeypatc
         subaccount=2,
         exchange_index=0,
     )
+
+
+def test_cancel_orders_preserves_uncertain_outcome(monkeypatch):
+    monkeypatch.setattr(
+        utils,
+        "get_all_orders",
+        lambda **kwargs: [{"order_id": "order-1", "ticker": "KXTEST"}],
+    )
+    monkeypatch.setattr(
+        portfolio,
+        "CancelOrder",
+        Mock(side_effect=KalshiTransportError("DELETE", "https://example.test")),
+    )
+
+    result = cancel_all_resting_orders()
+
+    assert result["results"][0]["ok"] is False
+    assert result["results"][0]["outcome_unknown"] is True
+
+
+def test_cancel_orders_skips_missing_order_id(monkeypatch):
+    monkeypatch.setattr(
+        utils,
+        "get_all_orders",
+        lambda **kwargs: [{"ticker": "KXTEST"}],
+    )
+    cancel = Mock()
+    monkeypatch.setattr(portfolio, "CancelOrder", cancel)
+
+    result = cancel_all_resting_orders()
+
+    assert result["results"][0]["error"] == ("Order response did not contain order_id")
+    cancel.assert_not_called()

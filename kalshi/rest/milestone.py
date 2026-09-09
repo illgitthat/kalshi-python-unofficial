@@ -7,7 +7,7 @@ from .rest import drop_none, get
 class Milestone:
     def GetMilestones(
         self,
-        limit: int,
+        limit: int = 100,
         minimum_start_date: str | None = None,
         category: str | None = None,
         competition: str | None = None,

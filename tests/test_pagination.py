@@ -36,6 +36,11 @@ def test_paginate_enforces_page_limit_and_detects_cursor_cycles():
         list(paginate(fetch_page, "items"))
 
 
+def test_paginate_rejects_invalid_page_limit_eagerly():
+    with pytest.raises(ValueError, match="max_pages must be at least 1"):
+        paginate(lambda cursor=None: {"items": []}, "items", max_pages=0)
+
+
 @pytest.mark.parametrize(
     ("owner", "iterator_name", "fetch_name", "item_key"),
     [
