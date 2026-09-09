@@ -21,8 +21,20 @@ ASYNCAPI_URL = "https://docs.kalshi.com/asyncapi.yaml"
 IMPLEMENTED_OPERATIONS = [
     (Account, "GetLimits", "GetAccountApiLimits", True, set()),
     (Account, "GetEndpointCosts", "GetAccountEndpointCosts", False, set()),
-    (Collection, "GetMultivariateEventCollections", "GetMultivariateEventCollections", False, set()),
-    (Collection, "GetMultivariateEventCollection", "GetMultivariateEventCollection", False, set()),
+    (
+        Collection,
+        "GetMultivariateEventCollections",
+        "GetMultivariateEventCollections",
+        False,
+        set(),
+    ),
+    (
+        Collection,
+        "GetMultivariateEventCollection",
+        "GetMultivariateEventCollection",
+        False,
+        set(),
+    ),
     (Exchange, "GetExchangeSchedule", "GetExchangeSchedule", False, set()),
     (Exchange, "GetExchangeStatus", "GetExchangeStatus", False, set()),
     (Exchange, "GetUserDataTimestamp", "GetUserDataTimestamp", False, set()),
@@ -115,8 +127,8 @@ def _openapi_operations(schema):
                 continue
 
             parameters = {}
-            for raw_parameter in (
-                path_item.get("parameters", []) + operation.get("parameters", [])
+            for raw_parameter in path_item.get("parameters", []) + operation.get(
+                "parameters", []
             ):
                 parameter = _resolve(schema, raw_parameter)
                 parameters[parameter["name"]] = parameter.get("required", False)
@@ -143,9 +155,13 @@ def _openapi_operations(schema):
 def test_implemented_rest_signatures_match_current_openapi():
     operations = _openapi_operations(_load_schema(OPENAPI_URL))
 
-    for owner, method_name, operation_id, authenticated, ignored in (
-        IMPLEMENTED_OPERATIONS
-    ):
+    for (
+        owner,
+        method_name,
+        operation_id,
+        authenticated,
+        ignored,
+    ) in IMPLEMENTED_OPERATIONS:
         operation = operations[operation_id]
         expected = set(operation["parameters"]) - ignored
         signature = inspect.signature(getattr(owner, method_name))
@@ -198,14 +214,20 @@ def test_orderbook_required_fields_match_current_asyncapi():
         assert set(envelope["required"]) == {"type", "sid", "seq", "msg"}
         payload = _resolve(schema, envelope["properties"]["msg"])
         assert {"market_ticker", "market_id"} <= set(payload["required"])
-        assert _resolve(
-            schema,
-            envelope["properties"]["sid"],
-        )["minimum"] == 1
-        assert _resolve(
-            schema,
-            envelope["properties"]["seq"],
-        )["minimum"] == 1
+        assert (
+            _resolve(
+                schema,
+                envelope["properties"]["sid"],
+            )["minimum"]
+            == 1
+        )
+        assert (
+            _resolve(
+                schema,
+                envelope["properties"]["seq"],
+            )["minimum"]
+            == 1
+        )
 
 
 def test_client_rejects_missing_asyncapi_orderbook_fields():
