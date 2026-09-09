@@ -60,6 +60,21 @@ for item in market.IterMarkets(status="open", max_pages=3):
     print(item["ticker"])
 ```
 
+Resolve structured target IDs from event milestones without building requests:
+
+```python
+from fastkalshi.rest import structured_target
+
+targets = structured_target.GetStructuredTargets(
+    ids=["target-id-1", "target-id-2"],
+    page_size=2,
+)
+```
+
+Structured-target requests use the same 10-second default as other REST
+requests. Latency-sensitive callers can pass a shorter scalar timeout or a
+`(connect, read)` timeout tuple.
+
 ## Trade with V2 orders
 
 V2 orders use fixed-point strings. `bid` buys YES and `ask` sells YES.
@@ -157,6 +172,9 @@ asyncio.run(Feed().run_forever())
 the same subscription code restores the feed. A sequence gap drops the
 out-of-sequence message and closes the socket so every subscribed market can
 restart from a fresh snapshot.
+Use `unsubscribe()`, `update_subscription()`, and `list_subscriptions()` for
+typed subscription control. `send_command()` remains available for commands
+that are not yet represented by a dedicated method.
 
 ## Compatibility
 

@@ -6,6 +6,7 @@ import requests
 SESSION = requests.Session()
 WRITE_SESSION = requests.Session()
 DEFAULT_TIMEOUT = 10.0
+type RequestTimeout = float | tuple[float, float]
 
 
 class KalshiAPIError(requests.HTTPError):
@@ -118,7 +119,7 @@ def request(
     headers: dict | None = None,
     params: dict | None = None,
     body: dict | list | None = None,
-    timeout: float = DEFAULT_TIMEOUT,
+    timeout: RequestTimeout = DEFAULT_TIMEOUT,
     session: requests.Session | None = None,
 ):
     query = {
@@ -161,7 +162,14 @@ def request(
     return payload
 
 
-def get(url, headers=None, session=None, *, timeout=DEFAULT_TIMEOUT, **kwargs):
+def get(
+    url,
+    headers=None,
+    session=None,
+    *,
+    timeout: RequestTimeout = DEFAULT_TIMEOUT,
+    **kwargs,
+):
     return request(
         "GET",
         url,
@@ -173,7 +181,13 @@ def get(url, headers=None, session=None, *, timeout=DEFAULT_TIMEOUT, **kwargs):
 
 
 def post(
-    url, headers=None, body=None, *, timeout=DEFAULT_TIMEOUT, session=None, **kwargs
+    url,
+    headers=None,
+    body=None,
+    *,
+    timeout: RequestTimeout = DEFAULT_TIMEOUT,
+    session=None,
+    **kwargs,
 ):
     return request(
         "POST",
@@ -187,7 +201,13 @@ def post(
 
 
 def put(
-    url, headers=None, body=None, *, timeout=DEFAULT_TIMEOUT, session=None, **kwargs
+    url,
+    headers=None,
+    body=None,
+    *,
+    timeout: RequestTimeout = DEFAULT_TIMEOUT,
+    session=None,
+    **kwargs,
 ):
     return request(
         "PUT",
@@ -201,7 +221,13 @@ def put(
 
 
 def delete(
-    url, headers=None, body=None, *, timeout=DEFAULT_TIMEOUT, session=None, **kwargs
+    url,
+    headers=None,
+    body=None,
+    *,
+    timeout: RequestTimeout = DEFAULT_TIMEOUT,
+    session=None,
+    **kwargs,
 ):
     return request(
         "DELETE",

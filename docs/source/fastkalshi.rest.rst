@@ -68,6 +68,14 @@ fastkalshi.rest.rest module
    :show-inheritance:
    :undoc-members:
 
+fastkalshi.rest.structured_target module
+----------------------------------------
+
+.. automodule:: fastkalshi.rest.structured_target
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 Module contents
 ---------------
 

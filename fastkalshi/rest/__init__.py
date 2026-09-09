@@ -11,6 +11,7 @@ from .rest import (
     KalshiResponseError,
     KalshiTransportError,
 )
+from .structured_target import structured_target
 
 __all__ = [
     "KalshiAPIError",
@@ -25,4 +26,5 @@ __all__ = [
     "milestone",
     "paginate",
     "portfolio",
+    "structured_target",
 ]
