@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import logging
 from typing import Any
 
@@ -38,21 +37,12 @@ class Client:
     async def connect(self, url: str | None = None):
         url = url or constants.WEBSOCKET_URL
         headers = request_headers("GET", url)
-        if "additional_headers" in inspect.signature(websockets.connect).parameters:
-            connection = websockets.connect(
+        try:
+            async with websockets.connect(
                 url,
                 additional_headers=headers,
                 compression=None,
-            )
-        else:
-            connection = websockets.connect(  # type: ignore[call-arg]
-                url,
-                extra_headers=headers,
-                compression=None,
-            )
-
-        try:
-            async with connection as websocket:
+            ) as websocket:
                 self.ws = websocket
                 self._resyncing_subscriptions.clear()
                 self._sequence_by_subscription.clear()

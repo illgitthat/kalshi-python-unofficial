@@ -59,7 +59,7 @@ class Auth:
             raise RuntimeError(
                 "Kalshi credentials not configured. Call auth.set_key(...) before making requests."
             )
-        timestamp = datetime.datetime.now(datetime.timezone.utc).timestamp()
+        timestamp = datetime.datetime.now(datetime.UTC).timestamp()
         current_time_milliseconds = int(timestamp * 1000)
         timestamp_str = str(current_time_milliseconds)
         path = urllib.parse.urlparse(url).path

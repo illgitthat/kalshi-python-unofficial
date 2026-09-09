@@ -7,10 +7,20 @@ September 9, 2026.
 ## Install
 
 ```bash
-python -m pip install kalshi-python-unofficial
+uv add kalshi-python-unofficial
 ```
 
 Python 3.14 or newer is required. Demo is the default environment.
+Install the optional plotting utilities with
+`uv add "kalshi-python-unofficial[analytics]"`.
+
+For local development:
+
+```bash
+uv sync
+uv run pytest
+uv build
+```
 
 ```python
 import kalshi

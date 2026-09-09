@@ -11,8 +11,6 @@ kalshi-python-unofficial documentation
    :caption: Contents:
 
    modules
-   kalshi.rest
-   kalshi.websocket
 
 Indices and tables
 ==================
