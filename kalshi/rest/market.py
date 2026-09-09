@@ -1,9 +1,13 @@
+from kalshi.auth import request_headers
 from kalshi.constants import api_url
 
 from .rest import drop_none, get
 
 
 class Market:
+    def _authenticated_get_request(self, url: str, **kwargs):
+        return get(url, headers=request_headers("GET", url), **kwargs)
+
     def GetEvents(
         self,
         limit: int = 200,
@@ -105,7 +109,8 @@ class Market:
         return get(api_url(f"markets/{ticker}"))
 
     def GetMarketOrderbook(self, ticker: str, depth: int | None = None):
-        return get(api_url(f"markets/{ticker}/orderbook"), depth=depth)
+        url = api_url(f"markets/{ticker}/orderbook")
+        return self._authenticated_get_request(url, depth=depth)
 
     def GetSeries(self, series_ticker: str, include_volume: bool = False):
         return get(
@@ -136,14 +141,14 @@ class Market:
     def GetUpcomingMarkets(self, **kwargs):
         return self.GetMarkets(status="unopened", **kwargs)
 
-    def GetLiveEvents(self, with_nested_markets: bool = True, **kwargs):
+    def GetLiveEvents(self, with_nested_markets: bool = False, **kwargs):
         return self.GetEvents(
             status="open",
             with_nested_markets=with_nested_markets,
             **kwargs,
         )
 
-    def GetUpcomingEvents(self, with_nested_markets: bool = True, **kwargs):
+    def GetUpcomingEvents(self, with_nested_markets: bool = False, **kwargs):
         return self.GetEvents(
             status="unopened",
             with_nested_markets=with_nested_markets,

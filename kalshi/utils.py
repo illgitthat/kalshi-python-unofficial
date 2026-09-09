@@ -27,6 +27,7 @@ def get_all_trades(limit: int = 100, ticker: str = None,
     market = Market()
     all_trades = []
     cursor = None
+    seen_cursors = set()
     while True:
         resp = market.GetTrades(limit=limit, cursor=cursor, ticker=ticker,
                                min_ts=min_ts, max_ts=max_ts)
@@ -34,12 +35,16 @@ def get_all_trades(limit: int = 100, ticker: str = None,
         cursor = resp.get("cursor")
         if not cursor:
             break
+        if cursor in seen_cursors:
+            raise RuntimeError("Kalshi returned a repeated trades cursor")
+        seen_cursors.add(cursor)
     return all_trades
 
 
 
 def get_all_orders(limit: int = 100, status: str = None, 
-                  ticker: str = None, event_ticker: str = None):
+                  ticker: str = None, event_ticker: str = None,
+                  subaccount: int = None, exchange_index: int = None):
     """
     Get all orders with pagination support.
     
@@ -48,6 +53,8 @@ def get_all_orders(limit: int = 100, status: str = None,
         status: Order status filter
         ticker: Ticker filter
         event_ticker: Event ticker filter
+        subaccount: Subaccount filter
+        exchange_index: Exchange shard filter
         
     Returns:
         List of all orders
@@ -56,30 +63,43 @@ def get_all_orders(limit: int = 100, status: str = None,
     
     all_orders = []
     cursor = None
+    seen_cursors = set()
     while True:
         resp = portfolio.GetOrders(limit=limit, cursor=cursor, status=status, 
-                                 ticker=ticker, event_ticker=event_ticker)
+                                 ticker=ticker, event_ticker=event_ticker,
+                                 subaccount=subaccount,
+                                 exchange_index=exchange_index)
         all_orders.extend(resp.get("orders", []))
         cursor = resp.get("cursor")
         if not cursor:
             break
+        if cursor in seen_cursors:
+            raise RuntimeError("Kalshi returned a repeated orders cursor")
+        seen_cursors.add(cursor)
     return all_orders
 
 
-def cancel_all_resting_orders(ticker: str = None, event_ticker: str = None) -> Dict:
+def cancel_all_resting_orders(ticker: str = None, event_ticker: str = None,
+                              subaccount: int = None,
+                              exchange_index: int = None) -> Dict:
     """
     Cancel all resting (open) orders.
     
     Args:
         ticker: Optional ticker filter
         event_ticker: Optional event ticker filter
+        subaccount: Optional subaccount filter
+        exchange_index: Optional exchange shard filter
         
     Returns:
         Dictionary with cancellation results
     """
     from kalshi.rest import portfolio
     
-    to_cancel = get_all_orders(status="resting", ticker=ticker, event_ticker=event_ticker)
+    to_cancel = get_all_orders(status="resting", ticker=ticker,
+                               event_ticker=event_ticker,
+                               subaccount=subaccount,
+                               exchange_index=exchange_index)
     results = []
     for o in to_cancel:
         oid = o.get("order_id")
@@ -87,8 +107,8 @@ def cancel_all_resting_orders(ticker: str = None, event_ticker: str = None) -> D
             resp = portfolio.CancelOrder(
                 order_id=oid,
                 market_ticker=o.get("ticker"),
-                subaccount=o.get("subaccount"),
-                exchange_index=o.get("exchange_index"),
+                subaccount=o.get("subaccount_number", subaccount),
+                exchange_index=o.get("exchange_index", exchange_index),
             )
             results.append({"order_id": oid, "ok": True, "response": resp})
         except Exception as e:

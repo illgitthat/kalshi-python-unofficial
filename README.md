@@ -1,12 +1,8 @@
 # kalshi-python-unofficial
 
-A lightweight, dictionary-based Python wrapper for Kalshi's REST and
-WebSocket APIs.
-
-This release follows Kalshi OpenAPI 3.30.0 and the current AsyncAPI
-specification as of September 9, 2026. It uses fixed-point string order
-fields, V2 event-order endpoints, exchange routing, subaccounts, milestones,
-and the recommended `external-api` hosts.
+A small, dictionary-based Python client for Kalshi REST and WebSocket APIs.
+It follows Kalshi OpenAPI 3.30.0 and the AsyncAPI specification dated
+September 9, 2026.
 
 ## Install
 
@@ -14,24 +10,7 @@ and the recommended `external-api` hosts.
 python -m pip install kalshi-python-unofficial
 ```
 
-Python 3.10 or newer is required.
-
-## Migration from 0.1
-
-Order writes now use Kalshi's V2 event-order endpoints. `CreateOrder`,
-`AmendOrder`, `DecreaseOrder`, `CancelOrder`, and batch methods therefore use
-fixed-point `count` and `price` strings, book-side `bid` or `ask`, and explicit
-exchange-routing fields. Legacy `action`, `type`, `yes_price`, and `no_price`
-arguments are not accepted.
-
-`GetPositions` no longer sends the removed `settlement_status` filter.
-`GetExchangeAnnouncements` raises `NotImplementedError` because the endpoint
-is absent from the current OpenAPI specification.
-
-## Environment and credentials
-
-The demo environment is selected by default. Demo and production credentials
-are separate.
+Python 3.10 or newer is required. Demo is the default environment.
 
 ```python
 import kalshi
@@ -40,41 +19,24 @@ kalshi.constants.use_prod()
 kalshi.auth.set_key("API_KEY_ID", "path/to/private-key.pem")
 ```
 
-Compatibility hosts remain available through
-`kalshi.constants.use_legacy_demo()` and `use_legacy_prod()`.
+Demo and production credentials are not interchangeable.
 
-## Market and event discovery
+## Discover markets and events
 
 ```python
 from kalshi.rest import market
 
-live_events = market.GetLiveEvents(with_milestones=True)
-upcoming_events = market.GetUpcomingEvents()
-live_markets = market.GetLiveMarkets(limit=1000)
-upcoming_markets = market.GetUpcomingMarkets(limit=1000)
+live_markets = market.GetLiveMarkets(limit=100)
+upcoming_events = market.GetUpcomingEvents(with_milestones=True)
 ```
 
-Event status is derived from child markets. When exact market state matters,
-inspect and filter nested `event.markets`, or use the market methods directly.
-List methods return Kalshi's cursor unchanged for caller-controlled pagination.
+Event status is derived from its child markets. Use `GetLiveMarkets()` or
+`GetUpcomingMarkets()` when exact market status matters. Paginated responses
+include the next Kalshi cursor.
 
-## Milestones and live data
+## Trade with V2 orders
 
-```python
-from kalshi.rest import milestone
-
-response = milestone.GetMilestones(
-    limit=100,
-    minimum_start_date="2026-09-09T00:00:00Z",
-)
-details = milestone.GetMilestone(response["milestones"][0]["id"])
-live_data = milestone.GetLiveData(details["milestone"]["id"])
-```
-
-## V2 orders
-
-V2 prices and quantities are fixed-point strings. `side` is the book side:
-`bid` corresponds to YES and `ask` corresponds to NO.
+V2 orders use fixed-point strings. `bid` buys YES and `ask` sells YES.
 
 ```python
 from kalshi.rest import portfolio
@@ -90,51 +52,41 @@ order = portfolio.CreateOrder(
     subaccount=1,
     exchange_index=-1,
 )
-
-portfolio.CancelOrder(
-    order["order"]["order_id"],
-    market_ticker="KXEXAMPLE-26-T1",
-    subaccount=1,
-    exchange_index=-1,
-)
 ```
 
-Write requests are not retried automatically. This avoids duplicate orders
-after ambiguous network failures. Reconcile by `client_order_id` before a
-caller retries.
+The client never retries failed requests. A caller must reconcile an
+uncertain write by `client_order_id` before it sends another order.
+HTTP failures raise `kalshi.rest.KalshiAPIError` with the API status and
+structured fields plus the raw payload. Transport failures raise
+`KalshiTransportError`; its `outcome_unknown` flag is true for mutations that
+may have reached Kalshi.
 
-## Subaccounts
+Always provide a unique `client_order_id`. Validate prices against the
+market's `price_ranges`, and inspect every result in a batch response.
+
+## Subaccounts and milestones
 
 ```python
-import uuid
+from kalshi.rest import milestone, portfolio
 
-from kalshi.rest import portfolio
-
-subaccount = portfolio.CreateSubaccount(exchange_index=0)
-portfolio.TransferBetweenSubaccounts(
-    client_transfer_id=str(uuid.uuid4()),
-    from_subaccount=0,
-    to_subaccount=subaccount["subaccount_number"],
-    amount_cents=10_000,
-    exchange_index=0,
-)
 balances = portfolio.GetSubaccountBalances()
+milestones = milestone.GetMilestones(limit=100)
+live_data = milestone.GetLiveData(milestones["milestones"][0]["id"])
 ```
 
-Subaccounts require a Direct account and the required API tier.
+Subaccounts require a supported Direct account and API tier.
 
 ## WebSocket
 
 ```python
 import asyncio
-
 import kalshi
 
 
-class MarketFeed(kalshi.websocket.Client):
+class Feed(kalshi.websocket.Client):
     async def on_open(self):
         await self.subscribe(
-            ["orderbook_delta", "market_lifecycle_v2"],
+            ["orderbook_delta"],
             ["KXEXAMPLE-26-T1"],
             use_yes_price=True,
         )
@@ -142,35 +94,30 @@ class MarketFeed(kalshi.websocket.Client):
     async def on_message(self, message):
         print(message)
 
-    async def on_sequence_gap(self, message, expected_sequence):
-        print("sequence gap", expected_sequence, message)
-
 
 kalshi.constants.use_prod()
-client = MarketFeed()
-asyncio.run(client.run_forever())
+asyncio.run(Feed().run_forever())
 ```
 
-`use_yes_price=True` makes both orderbook sides use the YES-leg price scale.
-The client also supports unsubscribe, subscription updates, sequence-gap
-callbacks, and reconnect/resubscribe through `run_forever()`.
+`run_forever()` reconnects and calls `on_open()` after each connection, so
+the same subscription code restores the feed. On an orderbook sequence gap,
+the default handler drops deltas until a new snapshot arrives. Other sequence
+gaps close the socket so `run_forever()` can reconnect.
 
-## Transport behavior
+## Compatibility
 
-All HTTP `2xx` responses are accepted, including empty `204` responses.
-Failures raise `kalshi.rest.rest.KalshiAPIError` with `status_code`, `code`,
-`message`, and `details`. Safe GET requests retry `429`, `502`, `503`, and
-`504` responses with exponential backoff. Configure transport defaults with:
+This release replaces legacy order writes with `/portfolio/events/orders`.
+Old `action`, `type`, `yes_price`, and `no_price` arguments are not accepted.
+`GetExchangeAnnouncements()` is retained only to report that Kalshi removed
+the endpoint from the current specification.
 
-```python
-from kalshi.rest.rest import configure
+The recommended `external-api` hosts are used by default. The older hosts
+remain available through `use_legacy_demo()` and `use_legacy_prod()`.
 
-configure(timeout=5.0, read_retries=2, backoff_factor=0.25)
-```
+## References
 
-## Primary API references
-
-- [Kalshi OpenAPI specification](https://docs.kalshi.com/openapi.yaml)
-- [Kalshi AsyncAPI specification](https://docs.kalshi.com/asyncapi.yaml)
+- [OpenAPI](https://docs.kalshi.com/openapi.yaml)
+- [AsyncAPI](https://docs.kalshi.com/asyncapi.yaml)
+- [API changelog](https://docs.kalshi.com/changelog)
 - [API environments](https://docs.kalshi.com/getting_started/api_environments)
 - [Fixed-point migration](https://docs.kalshi.com/getting_started/fixed_point_migration)

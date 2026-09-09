@@ -1,15 +1,10 @@
-import inspect
 import json
-import time
 from typing import Any
 
 import requests
 
 SESSION = requests.Session()
 DEFAULT_TIMEOUT = 10.0
-READ_RETRIES = 2
-BACKOFF_FACTOR = 0.25
-RETRYABLE_READ_STATUSES = {429, 502, 503, 504}
 
 
 class KalshiAPIError(requests.HTTPError):
@@ -20,6 +15,7 @@ class KalshiAPIError(requests.HTTPError):
         *,
         code: str | None = None,
         details: Any = None,
+        payload: Any = None,
         response: requests.Response | None = None,
     ):
         super().__init__(
@@ -29,33 +25,15 @@ class KalshiAPIError(requests.HTTPError):
         self.code = code
         self.message = message
         self.details = details
+        self.payload = payload
 
 
-def configure(
-    *,
-    timeout: float | None = None,
-    read_retries: int | None = None,
-    backoff_factor: float | None = None,
-) -> None:
-    global DEFAULT_TIMEOUT, READ_RETRIES, BACKOFF_FACTOR
-    if timeout is not None:
-        if timeout <= 0:
-            raise ValueError("timeout must be greater than zero")
-        DEFAULT_TIMEOUT = timeout
-    if read_retries is not None:
-        if read_retries < 0:
-            raise ValueError("read_retries cannot be negative")
-        READ_RETRIES = read_retries
-    if backoff_factor is not None:
-        if backoff_factor < 0:
-            raise ValueError("backoff_factor cannot be negative")
-        BACKOFF_FACTOR = backoff_factor
-
-
-def get_kwargs():
-    frame = inspect.currentframe().f_back
-    keys, _, _, values = inspect.getargvalues(frame)
-    return {key: values[key] for key in keys if key != "self"}
+class KalshiTransportError(requests.RequestException):
+    def __init__(self, method: str, url: str):
+        self.method = method
+        self.url = url
+        self.outcome_unknown = method not in {"GET", "HEAD", "OPTIONS"}
+        super().__init__(f"Kalshi {method} request failed without a response")
 
 
 def drop_none(dictionary: dict):
@@ -77,12 +55,12 @@ def _parse_error(response: requests.Response) -> KalshiAPIError:
     error = payload.get("error", payload) if isinstance(payload, dict) else {}
     if not isinstance(error, dict):
         error = {}
-    message = error.get("message") or response.text or response.reason
     return KalshiAPIError(
         response.status_code,
-        message,
+        error.get("message") or response.text or response.reason,
         code=error.get("code"),
         details=error.get("details"),
+        payload=payload,
         response=response,
     )
 
@@ -94,35 +72,31 @@ def request(
     headers: dict | None = None,
     params: dict | None = None,
     body: dict | list | None = None,
-    timeout: float | None = None,
+    timeout: float = DEFAULT_TIMEOUT,
 ):
-    method = method.upper()
     query = {
         key: _query_value(value)
         for key, value in (params or {}).items()
         if value is not None
     }
-    retries = READ_RETRIES if method == "GET" else 0
-
-    for attempt in range(retries + 1):
+    method = method.upper()
+    try:
         response = SESSION.request(
             method,
             url,
             params=query or None,
             headers=headers,
             json=body,
-            timeout=DEFAULT_TIMEOUT if timeout is None else timeout,
+            timeout=timeout,
+            allow_redirects=False,
         )
-        if response.status_code in RETRYABLE_READ_STATUSES and attempt < retries:
-            time.sleep(BACKOFF_FACTOR * (2**attempt))
-            continue
-        if not 200 <= response.status_code < 300:
-            raise _parse_error(response)
-        if response.status_code == 204 or not response.content:
-            return None
-        return response.json()
-
-    raise RuntimeError("unreachable")
+    except requests.RequestException as error:
+        raise KalshiTransportError(method, url) from error
+    if not 200 <= response.status_code < 300:
+        raise _parse_error(response)
+    if response.status_code == 204 or not response.content:
+        return None
+    return response.json()
 
 
 def get(url, headers=None, **kwargs):
@@ -131,10 +105,6 @@ def get(url, headers=None, **kwargs):
 
 def post(url, headers=None, body=None, **kwargs):
     return request("POST", url, headers=headers, params=kwargs, body=body)
-
-
-def put(url, headers=None, body=None, **kwargs):
-    return request("PUT", url, headers=headers, params=kwargs, body=body)
 
 
 def delete(url, headers=None, body=None, **kwargs):

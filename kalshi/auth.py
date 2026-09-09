@@ -23,6 +23,8 @@ class Signer:
                 password=None,
                 backend=default_backend(),
             )
+        if not isinstance(private_key, rsa.RSAPrivateKey):
+            raise TypeError("Kalshi API keys must use an RSA private key")
         return private_key
 
     def sign(self, text: str) -> str:

@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import json
 import logging
+from typing import Any
 
 import websockets
 from websockets.exceptions import WebSocketException
@@ -31,32 +32,29 @@ class Client:
     def __init__(self):
         self.message_id = 1
         self.ws = None
-        self._subscriptions = []
-        self._pending_subscription_commands = {}
+        self._resyncing_subscriptions = set()
         self._sequence_by_subscription = {}
 
-    async def connect(self, url: str | None = None, *, resubscribe: bool = False):
+    async def connect(self, url: str | None = None):
         url = url or constants.WEBSOCKET_URL
-        logger.info("Attempting to connect to WebSocket: %s", url)
         headers = request_headers("GET", url)
-        connect_kwargs = {}
-        signature = inspect.signature(websockets.connect)
-        if "additional_headers" in signature.parameters:
-            connect_kwargs["additional_headers"] = headers
+        if "additional_headers" in inspect.signature(websockets.connect).parameters:
+            connection = websockets.connect(url, additional_headers=headers)
         else:
-            connect_kwargs["extra_headers"] = headers
+            connection = websockets.connect(  # type: ignore[call-arg]
+                url,
+                extra_headers=headers,
+            )
 
         try:
-            async with websockets.connect(url, **connect_kwargs) as websocket:
+            async with connection as websocket:
                 self.ws = websocket
+                self._resyncing_subscriptions.clear()
                 self._sequence_by_subscription.clear()
-                logger.info("Connected to WebSocket: %s", url)
-                if resubscribe:
-                    await self.resubscribe()
-                    await self.on_reconnect()
-                else:
-                    await self.on_open()
+                await self.on_open()
                 await self.handler()
+        except websockets.ConnectionClosed as error:
+            await self.on_close(error.code, error.reason)
         finally:
             self.ws = None
 
@@ -64,29 +62,19 @@ class Client:
         self,
         url: str | None = None,
         *,
-        initial_delay: float = 1.0,
-        max_delay: float = 30.0,
+        reconnect_delay: float = 1.0,
     ):
-        delay = initial_delay
-        reconnecting = False
         while True:
             try:
-                await self.connect(url, resubscribe=reconnecting)
-                reconnecting = True
-                delay = initial_delay
+                await self.connect(url)
             except asyncio.CancelledError:
                 raise
             except (OSError, WebSocketException) as error:
                 await self.on_error(error)
-                reconnecting = True
-            await asyncio.sleep(delay)
-            delay = min(delay * 2, max_delay)
+            await asyncio.sleep(reconnect_delay)
 
     async def on_open(self):
         logger.debug("WebSocket connection opened.")
-
-    async def on_reconnect(self):
-        logger.debug("WebSocket connection restored.")
 
     async def on_message(self, message: dict):
         logger.debug("Received message: %s", message)
@@ -112,8 +100,18 @@ class Client:
             expected_sequence,
             message.get("seq"),
         )
+        if message.get("type") == "orderbook_delta":
+            await self.send_command(
+                "update_subscription",
+                {"sid": message["sid"], "action": "get_snapshot"},
+            )
+        elif self.ws is not None:
+            await self.ws.close(
+                code=1011,
+                reason="WebSocket sequence gap",
+            )
 
-    async def _send_command(self, command: str, params: dict | None = None):
+    async def send_command(self, command: str, params: dict | None = None):
         if self.ws is None:
             raise RuntimeError("WebSocket is not connected")
         message = {"id": self.message_id, "cmd": command}
@@ -129,154 +127,25 @@ class Client:
         channels: list[str],
         tickers: list[str] | None = None,
         *,
-        market_ticker: str | None = None,
-        market_ids: list[str] | None = None,
-        market_id: str | None = None,
-        send_initial_snapshot: bool | None = None,
-        skip_ticker_ack: bool | None = None,
         use_yes_price: bool = True,
-        shard_factor: int | None = None,
-        shard_key: int | None = None,
-        index_ids: list[str] | None = None,
-        underlying_tickers: list[str] | None = None,
-        remember: bool = True,
+        **options: Any,
     ):
-        market_selectors = [
-            bool(tickers),
-            market_ticker is not None,
-            bool(market_ids),
-            market_id is not None,
-        ]
-        if sum(market_selectors) > 1:
-            raise ValueError("provide only one market selector")
-        if shard_key is not None and shard_factor is None:
-            raise ValueError("shard_factor is required with shard_key")
-
-        params = {"channels": channels}
-        optional = {
-            "market_tickers": tickers,
-            "market_ticker": market_ticker,
-            "market_ids": market_ids,
-            "market_id": market_id,
-            "shard_factor": shard_factor,
-            "shard_key": shard_key,
-            "index_ids": index_ids,
-            "underlying_tickers": underlying_tickers,
-            "send_initial_snapshot": send_initial_snapshot,
-            "skip_ticker_ack": skip_ticker_ack,
-        }
-        params.update(
-            {key: value for key, value in optional.items() if value is not None}
-        )
+        params: dict[str, Any] = {"channels": channels}
+        params.update(options)
+        if tickers:
+            if "market_tickers" in options:
+                raise ValueError("provide tickers or market_tickers, not both")
+            params["market_tickers"] = tickers
         if "orderbook_delta" in channels:
             params["use_yes_price"] = use_yes_price
-        command_id = await self._send_command("subscribe", params)
-        if remember:
-            subscription = {"params": params.copy(), "sid": None}
-            self._subscriptions.append(subscription)
-            self._pending_subscription_commands[command_id] = subscription
-        return command_id
-
-    async def resubscribe(self):
-        self._pending_subscription_commands.clear()
-        for subscription in self._subscriptions:
-            subscription["sid"] = None
-            command_id = await self._send_command(
-                "subscribe",
-                subscription["params"],
-            )
-            self._pending_subscription_commands[command_id] = subscription
-
-    async def unsubscribe(self, subscription_ids: list[int]):
-        command_id = await self._send_command(
-            "unsubscribe",
-            {"sids": subscription_ids},
-        )
-        subscription_ids = set(subscription_ids)
-        self._subscriptions = [
-            subscription
-            for subscription in self._subscriptions
-            if subscription["sid"] not in subscription_ids
-        ]
-        return command_id
-
-    async def list_subscriptions(self):
-        return await self._send_command("list_subscriptions")
-
-    async def update_subscription(
-        self,
-        subscription_id: int,
-        action: str,
-        *,
-        market_ticker: str | None = None,
-        market_tickers: list[str] | None = None,
-        market_id: str | None = None,
-        market_ids: list[str] | None = None,
-        send_initial_snapshot: bool = False,
-    ):
-        params = {
-            "sid": subscription_id,
-            "action": action,
-            "send_initial_snapshot": send_initial_snapshot,
-        }
-        optional = {
-            "market_ticker": market_ticker,
-            "market_tickers": market_tickers,
-            "market_id": market_id,
-            "market_ids": market_ids,
-        }
-        params.update(
-            {key: value for key, value in optional.items() if value is not None}
-        )
-        command_id = await self._send_command("update_subscription", params)
-        if action in {"add_markets", "delete_markets"}:
-            self._update_remembered_subscription(
-                subscription_id,
-                action,
-                market_ticker=market_ticker,
-                market_tickers=market_tickers,
-                market_id=market_id,
-                market_ids=market_ids,
-            )
-        return command_id
-
-    def _update_remembered_subscription(
-        self,
-        subscription_id: int,
-        action: str,
-        **selectors,
-    ):
-        subscription = next(
-            (item for item in self._subscriptions if item["sid"] == subscription_id),
-            None,
-        )
-        if subscription is None:
-            return
-
-        params = subscription["params"]
-        for key, value in selectors.items():
-            if value is None:
-                continue
-            values = value if isinstance(value, list) else [value]
-            plural_key = key if key.endswith("s") else f"{key}s"
-            remembered = list(params.get(plural_key, []))
-            if action == "add_markets":
-                remembered.extend(item for item in values if item not in remembered)
-            else:
-                remembered = [item for item in remembered if item not in values]
-            params.pop(key, None)
-            if remembered:
-                params[plural_key] = remembered
-            else:
-                params.pop(plural_key, None)
+        return await self.send_command("subscribe", params)
 
     async def handler(self):
-        try:
-            async for raw_message in self.ws:
-                message = json.loads(raw_message)
-                await self._handle_protocol_message(message)
-        except websockets.ConnectionClosed as error:
-            await self.on_close(error.code, error.reason)
+        websocket = self.ws
+        if websocket is None:
+            raise RuntimeError("WebSocket is not connected")
+        async for raw_message in websocket:
+            await self._handle_protocol_message(json.loads(raw_message))
 
     async def _handle_protocol_message(self, message: dict):
         if message.get("type") == "error":
@@ -291,20 +160,22 @@ class Client:
             )
             return
 
-        if message.get("type") == "subscribed":
-            subscription = self._pending_subscription_commands.pop(
-                message.get("id"),
-                None,
-            )
-            if subscription is not None:
-                subscription["sid"] = (message.get("msg") or {}).get("sid")
-
         subscription_id = message.get("sid")
         sequence = message.get("seq")
         if subscription_id is not None and sequence is not None:
+            if message.get("type") == "orderbook_snapshot":
+                self._resyncing_subscriptions.discard(subscription_id)
+                self._sequence_by_subscription[subscription_id] = sequence
+                await self.on_message(message)
+                return
+            if subscription_id in self._resyncing_subscriptions:
+                return
             previous = self._sequence_by_subscription.get(subscription_id)
             if previous is not None and sequence != previous + 1:
+                if message.get("type") == "orderbook_delta":
+                    self._resyncing_subscriptions.add(subscription_id)
                 await self.on_sequence_gap(message, previous + 1)
+                return
             self._sequence_by_subscription[subscription_id] = sequence
 
         await self.on_message(message)

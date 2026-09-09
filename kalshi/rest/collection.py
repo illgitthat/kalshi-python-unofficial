@@ -1,6 +1,6 @@
 from kalshi.constants import api_url
 
-from .rest import drop_none, get, get_kwargs
+from .rest import drop_none, get
 
 
 class Collection:
@@ -14,7 +14,15 @@ class Collection:
     ):
         return get(
             api_url("multivariate_event_collections"),
-            **drop_none(get_kwargs()),
+            **drop_none(
+                {
+                    "status": status,
+                    "associated_event_ticker": associated_event_ticker,
+                    "series_ticker": series_ticker,
+                    "limit": limit,
+                    "cursor": cursor,
+                }
+            ),
         )
 
     def GetMultivariateEventCollection(self, collection_ticker: str):

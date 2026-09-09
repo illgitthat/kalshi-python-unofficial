@@ -15,6 +15,7 @@ setup(
     install_requires=["websockets>=10.0", "Requests", "cryptography"],
     classifiers=[
         "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10",

@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+import requests
 
 from kalshi.rest import rest
 
@@ -49,32 +50,40 @@ def test_request_raises_structured_api_error(monkeypatch):
     assert caught.value.status_code == 400
     assert caught.value.code == "invalid_request"
     assert caught.value.details == {"field": "price"}
+    assert caught.value.payload["error"]["message"] == "Bad request"
 
 
-def test_get_retries_retryable_status_without_retrying_writes(monkeypatch):
-    get_request = Mock(
-        side_effect=[
-            response(429, {"error": {"message": "slow down"}}),
-            response(200, {"markets": []}),
-        ]
-    )
-    monkeypatch.setattr(rest.SESSION, "request", get_request)
-    monkeypatch.setattr(rest.time, "sleep", Mock())
-
-    assert rest.request("GET", "https://example.test/markets") == {"markets": []}
-    assert get_request.call_count == 2
-
-    post_request = Mock(
+def test_request_does_not_retry_failures(monkeypatch):
+    request = Mock(
         return_value=response(
             503,
             {"error": {"message": "unavailable"}},
         )
     )
-    monkeypatch.setattr(rest.SESSION, "request", post_request)
+    monkeypatch.setattr(rest.SESSION, "request", request)
 
     with pytest.raises(rest.KalshiAPIError):
-        rest.request("POST", "https://example.test/orders", body={})
-    assert post_request.call_count == 1
+        rest.request("GET", "https://example.test/markets")
+    assert request.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("method", "outcome_unknown"),
+    [("GET", False), ("POST", True), ("DELETE", True)],
+)
+def test_transport_errors_mark_uncertain_mutations(
+    monkeypatch,
+    method,
+    outcome_unknown,
+):
+    request = Mock(side_effect=requests.Timeout("timed out"))
+    monkeypatch.setattr(rest.SESSION, "request", request)
+
+    with pytest.raises(rest.KalshiTransportError) as caught:
+        rest.request(method, "https://example.test/orders")
+
+    assert caught.value.outcome_unknown is outcome_unknown
+    assert request.call_count == 1
 
 
 def test_boolean_query_values_are_lowercase(monkeypatch):
@@ -84,3 +93,4 @@ def test_boolean_query_values_are_lowercase(monkeypatch):
     rest.get("https://example.test/events", with_nested_markets=True)
 
     assert request.call_args.kwargs["params"] == {"with_nested_markets": "true"}
+    assert request.call_args.kwargs["allow_redirects"] is False
