@@ -37,6 +37,23 @@ class KalshiTransportError(requests.RequestException):
         super().__init__(f"Kalshi {method} request failed without a response")
 
 
+class KalshiResponseError(ValueError):
+    def __init__(
+        self,
+        method: str,
+        url: str,
+        response: requests.Response,
+    ):
+        self.method = method
+        self.url = url
+        self.response = response
+        self.status_code = response.status_code
+        self.outcome_unknown = method not in {"GET", "HEAD", "OPTIONS"}
+        super().__init__(
+            f"Kalshi {method} response {response.status_code} did not contain valid JSON"
+        )
+
+
 def drop_none(dictionary: dict):
     return {key: value for key, value in dictionary.items() if value is not None}
 
@@ -99,9 +116,14 @@ def request(
         raise KalshiTransportError(method, url) from error
     if not 200 <= response.status_code < 300:
         raise _parse_error(response)
-    if response.status_code == 204 or not response.content:
+    if response.status_code == 204:
         return None
-    return orjson.loads(response.content)
+    if not response.content:
+        raise KalshiResponseError(method, url, response)
+    try:
+        return orjson.loads(response.content)
+    except orjson.JSONDecodeError as error:
+        raise KalshiResponseError(method, url, response) from error
 
 
 def get(url, headers=None, session=None, **kwargs):

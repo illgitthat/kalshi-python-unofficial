@@ -120,11 +120,16 @@ class Portfolio:
         cursor: str | None = None,
         limit: int = 100,
         count_filter: str | None = None,
+        settlement_status: str | None = None,
         ticker: str | None = None,
         event_ticker: str | None = None,
         subaccount: int | None = None,
         exchange_index: int | None = None,
     ):
+        if settlement_status is not None:
+            raise ValueError(
+                "settlement_status is no longer supported by the Kalshi API"
+            )
         url = api_url("portfolio/positions")
         return self._authenticated_get_request(
             url,

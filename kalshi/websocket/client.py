@@ -31,7 +31,6 @@ class Client:
     def __init__(self):
         self.message_id = 1
         self.ws = None
-        self._resyncing_subscriptions = set()
         self._sequence_by_subscription = {}
 
     async def connect(self, url: str | None = None):
@@ -44,7 +43,6 @@ class Client:
                 compression=None,
             ) as websocket:
                 self.ws = websocket
-                self._resyncing_subscriptions.clear()
                 self._sequence_by_subscription.clear()
                 await self.on_open()
                 await self.handler()
@@ -95,26 +93,16 @@ class Client:
             expected_sequence,
             message.get("seq"),
         )
-        if message.get("type") == "orderbook_delta":
-            await self.send_command(
-                "update_subscription",
-                {"sid": message["sid"], "action": "get_snapshot"},
-            )
-        elif self.ws is not None:
-            await self.ws.close(
-                code=1011,
-                reason="WebSocket sequence gap",
-            )
 
     async def send_command(self, command: str, params: dict | None = None):
         if self.ws is None:
             raise RuntimeError("WebSocket is not connected")
-        message = {"id": self.message_id, "cmd": command}
+        command_id = self.message_id
+        self.message_id += 1
+        message = {"id": command_id, "cmd": command}
         if params is not None:
             message["params"] = params
         await self.ws.send(orjson.dumps(message).decode())
-        command_id = self.message_id
-        self.message_id += 1
         return command_id
 
     async def subscribe(
@@ -140,9 +128,43 @@ class Client:
         if websocket is None:
             raise RuntimeError("WebSocket is not connected")
         async for raw_message in websocket:
-            await self._handle_protocol_message(orjson.loads(raw_message))
+            try:
+                message = orjson.loads(raw_message)
+            except orjson.JSONDecodeError:
+                await self.on_error(
+                    KalshiWebSocketError("Invalid JSON received from Kalshi")
+                )
+                await websocket.close(
+                    code=1002,
+                    reason="Invalid JSON",
+                )
+                return
+            if not isinstance(message, dict):
+                await self.on_error(
+                    KalshiWebSocketError("Invalid message received from Kalshi")
+                )
+                await websocket.close(
+                    code=1002,
+                    reason="Invalid message",
+                )
+                return
+            await self._handle_protocol_message(message)
 
     async def _handle_protocol_message(self, message: dict):
+        subscription_id = message.get("sid")
+        sequence = message.get("seq")
+        if subscription_id is not None and sequence is not None:
+            previous = self._sequence_by_subscription.get(subscription_id)
+            if previous is not None and sequence != previous + 1:
+                await self.on_sequence_gap(message, previous + 1)
+                if self.ws is not None:
+                    await self.ws.close(
+                        code=1011,
+                        reason="WebSocket sequence gap",
+                    )
+                return
+            self._sequence_by_subscription[subscription_id] = sequence
+
         if message.get("type") == "error":
             payload = message.get("msg") or {}
             await self.on_error(
@@ -150,27 +172,14 @@ class Client:
                     payload.get("msg", "Kalshi WebSocket error"),
                     code=payload.get("code"),
                     command_id=message.get("id"),
-                    subscription_id=message.get("sid"),
+                    subscription_id=subscription_id,
                 )
             )
+            if payload.get("code") == 25 and self.ws is not None:
+                await self.ws.close(
+                    code=1011,
+                    reason="WebSocket subscription buffer overflow",
+                )
             return
-
-        subscription_id = message.get("sid")
-        sequence = message.get("seq")
-        if subscription_id is not None and sequence is not None:
-            if message.get("type") == "orderbook_snapshot":
-                self._resyncing_subscriptions.discard(subscription_id)
-                self._sequence_by_subscription[subscription_id] = sequence
-                await self.on_message(message)
-                return
-            if subscription_id in self._resyncing_subscriptions:
-                return
-            previous = self._sequence_by_subscription.get(subscription_id)
-            if previous is not None and sequence != previous + 1:
-                if message.get("type") == "orderbook_delta":
-                    self._resyncing_subscriptions.add(subscription_id)
-                await self.on_sequence_gap(message, previous + 1)
-                return
-            self._sequence_by_subscription[subscription_id] = sequence
 
         await self.on_message(message)

@@ -49,6 +49,27 @@ def test_live_event_discovery_uses_current_filters(recorded_request):
     }
 
 
+def test_get_markets_preserves_legacy_positional_filters(recorded_request):
+    Market().GetMarkets(
+        100,
+        None,
+        None,
+        None,
+        2_000_000_000,
+        1_000_000_000,
+        "open",
+        ["KXTEST"],
+    )
+
+    assert recorded_request.call_args.kwargs["params"] == {
+        "limit": 100,
+        "max_close_ts": 2_000_000_000,
+        "min_close_ts": 1_000_000_000,
+        "status": "open",
+        "tickers": "KXTEST",
+    }
+
+
 def test_create_order_uses_v2_fixed_point_payload(recorded_request):
     assert Portfolio().CreateOrder(
         ticker="KXTEST",
@@ -149,6 +170,31 @@ def test_decrease_order_requires_one_quantity(quantities):
         match="provide exactly one of reduce_by or reduce_to",
     ):
         Portfolio().DecreaseOrder("1", **quantities)
+
+
+def test_positions_preserve_legacy_positional_filters(recorded_request):
+    Portfolio().GetPositions(
+        None,
+        100,
+        None,
+        None,
+        "KXTEST",
+        "KXEVENT",
+    )
+
+    assert recorded_request.call_args.kwargs["params"] == {
+        "limit": 100,
+        "ticker": "KXTEST",
+        "event_ticker": "KXEVENT",
+    }
+
+
+def test_removed_position_settlement_filter_fails_explicitly():
+    with pytest.raises(
+        ValueError,
+        match="settlement_status is no longer supported",
+    ):
+        Portfolio().GetPositions(settlement_status="settled")
 
 
 def test_subaccount_transfer_preserves_id_and_units(recorded_request):

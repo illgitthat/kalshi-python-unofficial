@@ -70,6 +70,8 @@ HTTP failures raise `kalshi.rest.KalshiAPIError` with the API status and
 structured fields plus the raw payload. Transport failures raise
 `KalshiTransportError`; its `outcome_unknown` flag is true for mutations that
 may have reached Kalshi.
+Invalid successful responses raise `KalshiResponseError` with the same
+mutation uncertainty flag.
 
 Always provide a unique `client_order_id`. Validate prices against the
 market's `price_ranges`, and inspect every result in a batch response.
@@ -124,9 +126,9 @@ asyncio.run(Feed().run_forever())
 ```
 
 `run_forever()` reconnects and calls `on_open()` after each connection, so
-the same subscription code restores the feed. On an orderbook sequence gap,
-the default handler drops deltas until a new snapshot arrives. Other sequence
-gaps close the socket so `run_forever()` can reconnect.
+the same subscription code restores the feed. A sequence gap drops the
+out-of-sequence message and closes the socket so every subscribed market can
+restart from a fresh snapshot.
 
 ## Compatibility
 

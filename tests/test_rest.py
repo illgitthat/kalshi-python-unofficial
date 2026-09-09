@@ -26,6 +26,22 @@ def test_request_accepts_empty_success(monkeypatch):
     assert rest.request("DELETE", "https://example.test/orders") is None
 
 
+@pytest.mark.parametrize("content", [b"", b"{"])
+def test_mutation_success_requires_valid_json(monkeypatch, content):
+    response = Mock(status_code=201, content=content)
+    monkeypatch.setattr(
+        rest.WRITE_SESSION,
+        "request",
+        Mock(return_value=response),
+    )
+
+    with pytest.raises(rest.KalshiResponseError) as caught:
+        rest.request("POST", "https://example.test/orders", body={})
+
+    assert caught.value.outcome_unknown is True
+    assert caught.value.response is response
+
+
 def test_request_raises_structured_api_error(monkeypatch):
     monkeypatch.setattr(
         rest.WRITE_SESSION,

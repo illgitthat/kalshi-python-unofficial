@@ -1,7 +1,15 @@
+from unittest.mock import Mock
+
 import pandas as pd
 import pytest
 
-from kalshi.utils import calculate_volume_stats, calculate_vwap
+from kalshi import utils
+from kalshi.rest import portfolio
+from kalshi.utils import (
+    calculate_volume_stats,
+    calculate_vwap,
+    cancel_all_resting_orders,
+)
 
 
 def test_analytics_accept_current_fixed_point_trade_fields():
@@ -34,3 +42,29 @@ def test_analytics_preserve_legacy_trade_columns():
     )
 
     assert calculate_vwap(trades) == pytest.approx(110 / 3)
+
+
+def test_cancel_orders_preserves_explicit_scope_for_nullable_metadata(monkeypatch):
+    monkeypatch.setattr(
+        utils,
+        "get_all_orders",
+        lambda **kwargs: [
+            {
+                "order_id": "order-1",
+                "ticker": "KXTEST",
+                "subaccount_number": None,
+                "exchange_index": None,
+            }
+        ],
+    )
+    cancel = Mock(return_value={})
+    monkeypatch.setattr(portfolio, "CancelOrder", cancel)
+
+    cancel_all_resting_orders(subaccount=2, exchange_index=0)
+
+    cancel.assert_called_once_with(
+        order_id="order-1",
+        market_ticker="KXTEST",
+        subaccount=2,
+        exchange_index=0,
+    )

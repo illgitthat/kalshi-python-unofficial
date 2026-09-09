@@ -1,12 +1,15 @@
-from datetime import datetime, timedelta
+from __future__ import annotations
 
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import pandas as pd
-from matplotlib.colors import Normalize
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def _normalize_trade_columns(trades_df: pd.DataFrame) -> pd.DataFrame:
+    import pandas as pd
+
     normalized = trades_df.copy()
     if "count_fp" in normalized:
         normalized["count"] = pd.to_numeric(normalized["count_fp"])
@@ -124,7 +127,12 @@ def cancel_all_resting_orders(
     Returns:
         Dictionary with cancellation results
     """
-    from kalshi.rest import KalshiAPIError, KalshiTransportError, portfolio
+    from kalshi.rest import (
+        KalshiAPIError,
+        KalshiResponseError,
+        KalshiTransportError,
+        portfolio,
+    )
 
     to_cancel = get_all_orders(
         status="resting",
@@ -136,15 +144,21 @@ def cancel_all_resting_orders(
     results = []
     for o in to_cancel:
         oid = o.get("order_id")
+        order_subaccount = o.get("subaccount_number")
+        if order_subaccount is None:
+            order_subaccount = subaccount
+        order_exchange_index = o.get("exchange_index")
+        if order_exchange_index is None:
+            order_exchange_index = exchange_index
         try:
             resp = portfolio.CancelOrder(
                 order_id=oid,
                 market_ticker=o.get("ticker"),
-                subaccount=o.get("subaccount_number", subaccount),
-                exchange_index=o.get("exchange_index", exchange_index),
+                subaccount=order_subaccount,
+                exchange_index=order_exchange_index,
             )
             results.append({"order_id": oid, "ok": True, "response": resp})
-        except (KalshiAPIError, KalshiTransportError) as e:
+        except (KalshiAPIError, KalshiResponseError, KalshiTransportError) as e:
             results.append({"order_id": oid, "ok": False, "error": str(e)})
     return {
         "requested": len(to_cancel),
@@ -172,6 +186,11 @@ def plot_trades(
         title: Plot title
         figsize: Figure size as (width, height)
     """
+    import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    from matplotlib.colors import Normalize
+
     if len(trades_df) == 0:
         print("No trade data to plot")
         return

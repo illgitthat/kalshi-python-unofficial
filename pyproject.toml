@@ -59,5 +59,10 @@ source-include = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.pyright]
+include = ["kalshi"]
+exclude = ["kalshi/utils.py"]
+pythonVersion = "3.14"
+
 [tool.ruff]
 target-version = "py314"
