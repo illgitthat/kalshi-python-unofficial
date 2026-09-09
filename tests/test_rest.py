@@ -155,3 +155,15 @@ def test_boolean_query_values_are_lowercase(monkeypatch):
 
     assert request.call_args.kwargs["params"] == {"with_nested_markets": "true"}
     assert request.call_args.kwargs["allow_redirects"] is False
+
+
+@pytest.mark.parametrize("caller", [rest.get, rest.post, rest.put, rest.delete])
+def test_timeout_is_applied_and_not_sent_as_a_query_parameter(monkeypatch, caller):
+    request = Mock(return_value=response(200, {}))
+    monkeypatch.setattr(rest.SESSION, "request", request)
+    monkeypatch.setattr(rest.WRITE_SESSION, "request", request)
+
+    caller("https://example.test/orders", timeout=1.5)
+
+    assert request.call_args.kwargs["timeout"] == 1.5
+    assert request.call_args.kwargs["params"] is None

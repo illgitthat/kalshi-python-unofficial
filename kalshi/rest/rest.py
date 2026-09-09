@@ -142,17 +142,54 @@ def request(
     return payload
 
 
-def get(url, headers=None, session=None, **kwargs):
-    return request("GET", url, headers=headers, params=kwargs, session=session)
+def get(url, headers=None, session=None, *, timeout=DEFAULT_TIMEOUT, **kwargs):
+    return request(
+        "GET",
+        url,
+        headers=headers,
+        params=kwargs,
+        timeout=timeout,
+        session=session,
+    )
 
 
-def post(url, headers=None, body=None, **kwargs):
-    return request("POST", url, headers=headers, params=kwargs, body=body)
+def post(
+    url, headers=None, body=None, *, timeout=DEFAULT_TIMEOUT, session=None, **kwargs
+):
+    return request(
+        "POST",
+        url,
+        headers=headers,
+        params=kwargs,
+        body=body,
+        timeout=timeout,
+        session=session,
+    )
 
 
-def put(url, headers=None, body=None, **kwargs):
-    return request("PUT", url, headers=headers, params=kwargs, body=body)
+def put(
+    url, headers=None, body=None, *, timeout=DEFAULT_TIMEOUT, session=None, **kwargs
+):
+    return request(
+        "PUT",
+        url,
+        headers=headers,
+        params=kwargs,
+        body=body,
+        timeout=timeout,
+        session=session,
+    )
 
 
-def delete(url, headers=None, body=None, **kwargs):
-    return request("DELETE", url, headers=headers, params=kwargs, body=body)
+def delete(
+    url, headers=None, body=None, *, timeout=DEFAULT_TIMEOUT, session=None, **kwargs
+):
+    return request(
+        "DELETE",
+        url,
+        headers=headers,
+        params=kwargs,
+        body=body,
+        timeout=timeout,
+        session=session,
+    )
