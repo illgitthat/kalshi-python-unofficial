@@ -2,6 +2,8 @@ import asyncio
 import importlib
 import json
 
+import pytest
+
 from kalshi.websocket import Client, KalshiWebSocketError
 
 
@@ -258,6 +260,76 @@ def test_buffer_overflow_error_closes_socket():
             1011,
             "WebSocket subscription buffer overflow",
         )
+
+    asyncio.run(run())
+
+
+def test_buffer_overflow_stops_buffered_deltas():
+    async def run():
+        incoming = [
+            {
+                "type": "orderbook_snapshot",
+                "sid": 3,
+                "seq": 1,
+                "msg": {"market_ticker": "A"},
+            },
+            {
+                "type": "error",
+                "sid": 3,
+                "seq": 2,
+                "msg": {"code": 25, "msg": "buffer overflow"},
+            },
+            {
+                "type": "orderbook_delta",
+                "sid": 3,
+                "seq": 3,
+                "msg": {"market_ticker": "A"},
+            },
+        ]
+        client = RecordingClient()
+        client.ws = FakeWebSocket(
+            incoming=[json.dumps(message) for message in incoming]
+        )
+
+        await client.handler()
+
+        assert [message["seq"] for message in client.messages] == [1]
+        assert client.ws.closed == (
+            1011,
+            "WebSocket subscription buffer overflow",
+        )
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        {"type": "error", "msg": "failure"},
+        {
+            "type": "orderbook_snapshot",
+            "sid": [],
+            "seq": 1,
+            "msg": {"market_ticker": "A"},
+        },
+        {
+            "type": "orderbook_snapshot",
+            "sid": 1,
+            "seq": "1",
+            "msg": {"market_ticker": "A"},
+        },
+    ],
+)
+def test_invalid_nested_fields_report_protocol_error(message):
+    async def run():
+        client = RecordingClient()
+        client.ws = FakeWebSocket()
+
+        should_continue = await client._handle_protocol_message(message)
+
+        assert should_continue is False
+        assert isinstance(client.errors[0], KalshiWebSocketError)
+        assert client.ws.closed == (1002, "Invalid message")
 
     asyncio.run(run())
 

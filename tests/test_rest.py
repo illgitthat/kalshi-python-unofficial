@@ -26,7 +26,7 @@ def test_request_accepts_empty_success(monkeypatch):
     assert rest.request("DELETE", "https://example.test/orders") is None
 
 
-@pytest.mark.parametrize("content", [b"", b"{"])
+@pytest.mark.parametrize("content", [b"", b"{", b"null", b"[]"])
 def test_mutation_success_requires_valid_json(monkeypatch, content):
     response = Mock(status_code=201, content=content)
     monkeypatch.setattr(
@@ -64,9 +64,39 @@ def test_request_raises_structured_api_error(monkeypatch):
         rest.request("POST", "https://example.test/orders", body={})
 
     assert caught.value.status_code == 400
+    assert caught.value.outcome_unknown is False
     assert caught.value.code == "invalid_request"
     assert caught.value.details == {"field": "price"}
     assert caught.value.payload["error"]["message"] == "Bad request"
+
+
+@pytest.mark.parametrize(
+    ("method", "status", "outcome_unknown"),
+    [
+        ("GET", 500, False),
+        ("POST", 500, True),
+        ("DELETE", 408, True),
+        ("POST", 429, False),
+    ],
+)
+def test_api_errors_mark_only_ambiguous_mutations(
+    monkeypatch,
+    method,
+    status,
+    outcome_unknown,
+):
+    response_value = response(
+        status,
+        {"error": {"message": "request failed"}},
+    )
+    request = Mock(return_value=response_value)
+    monkeypatch.setattr(rest.SESSION, "request", request)
+    monkeypatch.setattr(rest.WRITE_SESSION, "request", request)
+
+    with pytest.raises(rest.KalshiAPIError) as caught:
+        rest.request(method, "https://example.test/resource")
+
+    assert caught.value.outcome_unknown is outcome_unknown
 
 
 def test_request_does_not_retry_failures(monkeypatch):

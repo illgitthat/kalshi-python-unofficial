@@ -80,6 +80,7 @@ structured fields plus the raw payload. Transport failures raise
 may have reached Kalshi.
 Invalid successful responses raise `KalshiResponseError` with the same
 mutation uncertainty flag.
+Mutation responses with status `408` or `5xx` are also marked uncertain.
 
 Always provide a unique `client_order_id`. Validate prices against the
 market's `price_ranges`, and inspect every result in a batch response.

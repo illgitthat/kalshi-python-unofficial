@@ -172,7 +172,7 @@ def cancel_all_resting_orders(
                 {
                     "order_id": oid,
                     "ok": False,
-                    "outcome_unknown": getattr(e, "outcome_unknown", False),
+                    "outcome_unknown": e.outcome_unknown,
                     "error": str(e),
                 }
             )

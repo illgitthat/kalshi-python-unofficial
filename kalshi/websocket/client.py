@@ -150,11 +150,24 @@ class Client:
                     reason="Invalid message",
                 )
                 return
-            await self._handle_protocol_message(message)
+            if not await self._handle_protocol_message(message):
+                return
 
     async def _handle_protocol_message(self, message: dict):
         subscription_id = message.get("sid")
         sequence = message.get("seq")
+        if subscription_id is not None and (
+            isinstance(subscription_id, bool) or not isinstance(subscription_id, int)
+        ):
+            return await self._reject_protocol_message(
+                "WebSocket sid must be an integer"
+            )
+        if sequence is not None and (
+            isinstance(sequence, bool) or not isinstance(sequence, int)
+        ):
+            return await self._reject_protocol_message(
+                "WebSocket seq must be an integer"
+            )
         if subscription_id is not None and sequence is not None:
             previous = self._sequence_by_subscription.get(subscription_id)
             if previous is not None and sequence != previous + 1:
@@ -164,10 +177,14 @@ class Client:
                         code=1011,
                         reason="WebSocket sequence gap",
                     )
-                return
+                return False
             self._sequence_by_subscription[subscription_id] = sequence
 
         message_type = message.get("type")
+        if not isinstance(message_type, str):
+            return await self._reject_protocol_message(
+                "WebSocket type must be a string"
+            )
         if message_type in {"orderbook_snapshot", "orderbook_delta"}:
             payload = message.get("msg")
             market_key = (
@@ -186,7 +203,7 @@ class Client:
                         code=1002,
                         reason="Invalid orderbook message",
                     )
-                return
+                return False
             ready_markets = self._orderbook_snapshots.setdefault(
                 subscription_id,
                 set(),
@@ -194,10 +211,14 @@ class Client:
             if message_type == "orderbook_snapshot":
                 ready_markets.add(market_key)
             elif market_key not in ready_markets:
-                return
+                return True
 
         if message_type == "error":
             payload = message.get("msg") or {}
+            if not isinstance(payload, dict):
+                return await self._reject_protocol_message(
+                    "WebSocket error payload must be an object"
+                )
             await self.on_error(
                 KalshiWebSocketError(
                     payload.get("msg", "Kalshi WebSocket error"),
@@ -211,6 +232,17 @@ class Client:
                     code=1011,
                     reason="WebSocket subscription buffer overflow",
                 )
-            return
+                return False
+            return True
 
         await self.on_message(message)
+        return True
+
+    async def _reject_protocol_message(self, message: str) -> bool:
+        await self.on_error(KalshiWebSocketError(message))
+        if self.ws is not None:
+            await self.ws.close(
+                code=1002,
+                reason="Invalid message",
+            )
+        return False

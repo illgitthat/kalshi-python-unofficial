@@ -14,6 +14,8 @@ class KalshiAPIError(requests.HTTPError):
         status_code: int,
         message: str,
         *,
+        method: str,
+        url: str,
         code: str | None = None,
         details: Any = None,
         payload: Any = None,
@@ -23,10 +25,15 @@ class KalshiAPIError(requests.HTTPError):
             f"Kalshi API error {status_code}: {message}", response=response
         )
         self.status_code = status_code
+        self.method = method
+        self.url = url
         self.code = code
         self.message = message
         self.details = details
         self.payload = payload
+        self.outcome_unknown = method not in {"GET", "HEAD", "OPTIONS"} and (
+            status_code == 408 or status_code >= 500
+        )
 
 
 class KalshiTransportError(requests.RequestException):
@@ -64,7 +71,11 @@ def _query_value(value: Any) -> Any:
     return value
 
 
-def _parse_error(response: requests.Response) -> KalshiAPIError:
+def _parse_error(
+    response: requests.Response,
+    method: str,
+    url: str,
+) -> KalshiAPIError:
     try:
         payload = orjson.loads(response.content)
     except orjson.JSONDecodeError:
@@ -76,6 +87,8 @@ def _parse_error(response: requests.Response) -> KalshiAPIError:
     return KalshiAPIError(
         response.status_code,
         error.get("message") or response.text or response.reason,
+        method=method,
+        url=url,
         code=error.get("code"),
         details=error.get("details"),
         payload=payload,
@@ -115,15 +128,18 @@ def request(
     except requests.RequestException as error:
         raise KalshiTransportError(method, url) from error
     if not 200 <= response.status_code < 300:
-        raise _parse_error(response)
+        raise _parse_error(response, method, url)
     if response.status_code == 204:
         return None
     if not response.content:
         raise KalshiResponseError(method, url, response)
     try:
-        return orjson.loads(response.content)
+        payload = orjson.loads(response.content)
     except orjson.JSONDecodeError as error:
         raise KalshiResponseError(method, url, response) from error
+    if not isinstance(payload, dict):
+        raise KalshiResponseError(method, url, response)
+    return payload
 
 
 def get(url, headers=None, session=None, **kwargs):
