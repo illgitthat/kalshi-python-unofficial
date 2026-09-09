@@ -40,6 +40,7 @@ def test_mutation_success_requires_valid_json(monkeypatch, content):
 
     assert caught.value.outcome_unknown is True
     assert caught.value.response is response
+    assert "did not contain a JSON object" in str(caught.value)
 
 
 def test_request_raises_structured_api_error(monkeypatch):

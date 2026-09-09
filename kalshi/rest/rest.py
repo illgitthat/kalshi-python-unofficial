@@ -57,7 +57,7 @@ class KalshiResponseError(ValueError):
         self.status_code = response.status_code
         self.outcome_unknown = method not in {"GET", "HEAD", "OPTIONS"}
         super().__init__(
-            f"Kalshi {method} response {response.status_code} did not contain valid JSON"
+            f"Kalshi {method} response {response.status_code} did not contain a JSON object"
         )
 
 

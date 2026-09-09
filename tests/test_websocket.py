@@ -340,6 +340,35 @@ def test_buffer_overflow_stops_buffered_deltas():
         {"type": "error", "msg": {"code": 10, "msg": []}},
         {
             "type": "orderbook_snapshot",
+            "sid": 1,
+            "msg": {"market_ticker": "A"},
+        },
+        {
+            "type": "orderbook_snapshot",
+            "sid": 1,
+            "seq": 0,
+            "msg": {"market_ticker": "A"},
+        },
+        {
+            "type": "orderbook_snapshot",
+            "sid": 0,
+            "seq": 1,
+            "msg": {"market_ticker": "A"},
+        },
+        {
+            "type": "orderbook_snapshot",
+            "sid": 1,
+            "seq": 1,
+            "msg": {"market_ticker": []},
+        },
+        {
+            "type": "orderbook_delta",
+            "sid": 1,
+            "seq": 1,
+            "msg": {"market_id": {}},
+        },
+        {
+            "type": "orderbook_snapshot",
             "sid": [],
             "seq": 1,
             "msg": {"market_ticker": "A"},

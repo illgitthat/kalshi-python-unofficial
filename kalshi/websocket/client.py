@@ -175,16 +175,18 @@ class Client:
         subscription_id = message.get("sid")
         sequence = message.get("seq")
         if subscription_id is not None and (
-            isinstance(subscription_id, bool) or not isinstance(subscription_id, int)
+            isinstance(subscription_id, bool)
+            or not isinstance(subscription_id, int)
+            or subscription_id < 1
         ):
             return await self._reject_protocol_message(
-                "WebSocket sid must be an integer"
+                "WebSocket sid must be a positive integer"
             )
         if sequence is not None and (
-            isinstance(sequence, bool) or not isinstance(sequence, int)
+            isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 1
         ):
             return await self._reject_protocol_message(
-                "WebSocket seq must be an integer"
+                "WebSocket seq must be a positive integer"
             )
         if subscription_id is not None and sequence is not None:
             previous = self._sequence_by_subscription.get(subscription_id)
@@ -205,23 +207,19 @@ class Client:
             )
         if message_type in {"orderbook_snapshot", "orderbook_delta"}:
             payload = message.get("msg")
-            market_key = (
-                payload.get("market_ticker") or payload.get("market_id")
-                if isinstance(payload, dict)
-                else None
-            )
-            if subscription_id is None or market_key is None:
-                await self.on_error(
-                    KalshiWebSocketError(
-                        f"{message_type} did not contain a market identifier"
-                    )
+            if (
+                subscription_id is None
+                or sequence is None
+                or not isinstance(payload, dict)
+            ):
+                return await self._reject_protocol_message(
+                    f"{message_type} requires sid, seq, and an object payload"
                 )
-                if self.ws is not None:
-                    await self.ws.close(
-                        code=1002,
-                        reason="Invalid orderbook message",
-                    )
-                return False
+            market_key = payload.get("market_ticker") or payload.get("market_id")
+            if not isinstance(market_key, str) or not market_key:
+                return await self._reject_protocol_message(
+                    f"{message_type} did not contain a valid market identifier"
+                )
             ready_markets = self._orderbook_snapshots.setdefault(
                 subscription_id,
                 set(),
