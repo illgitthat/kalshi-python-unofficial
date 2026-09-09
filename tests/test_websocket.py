@@ -8,10 +8,12 @@ from kalshi.websocket import Client, KalshiWebSocketError
 
 
 class FakeWebSocket:
-    def __init__(self, incoming=None):
+    def __init__(self, incoming=None, close_code=None, close_reason=None):
         self.incoming = incoming or []
         self.messages = []
         self.closed = None
+        self.close_code = close_code
+        self.close_reason = close_reason
 
     async def send(self, message):
         await asyncio.sleep(0)
@@ -19,6 +21,8 @@ class FakeWebSocket:
 
     async def close(self, code=None, reason=None):
         self.closed = (code, reason)
+        self.close_code = code
+        self.close_reason = reason
 
     def __aiter__(self):
         return self._messages()
@@ -34,6 +38,7 @@ class RecordingClient(Client):
         self.messages = []
         self.errors = []
         self.gaps = []
+        self.closes = []
 
     async def on_message(self, message):
         self.messages.append(message)
@@ -43,6 +48,9 @@ class RecordingClient(Client):
 
     async def on_sequence_gap(self, message, expected_sequence):
         self.gaps.append((message, expected_sequence))
+
+    async def on_close(self, close_status_code, close_msg):
+        self.closes.append((close_status_code, close_msg))
 
 
 class FakeConnection:
@@ -264,6 +272,26 @@ def test_buffer_overflow_error_closes_socket():
     asyncio.run(run())
 
 
+def test_channel_error_closes_socket():
+    async def run():
+        client = RecordingClient()
+        client.ws = FakeWebSocket()
+
+        should_continue = await client._handle_protocol_message(
+            {
+                "type": "error",
+                "sid": 3,
+                "seq": 1,
+                "msg": {"code": 10, "msg": "channel error"},
+            }
+        )
+
+        assert should_continue is False
+        assert client.ws.closed == (1011, "WebSocket channel error")
+
+    asyncio.run(run())
+
+
 def test_buffer_overflow_stops_buffered_deltas():
     async def run():
         incoming = [
@@ -356,5 +384,54 @@ def test_invalid_message_envelope_reports_protocol_error_and_closes():
 
         assert isinstance(client.errors[0], KalshiWebSocketError)
         assert client.ws.closed == (1002, "Invalid message")
+
+    asyncio.run(run())
+
+
+def test_connect_reports_clean_close_once(monkeypatch):
+    async def run():
+        websocket = FakeWebSocket(close_code=1000, close_reason="clean")
+        module = importlib.import_module("kalshi.websocket.client")
+        monkeypatch.setattr(module, "request_headers", lambda method, url: {})
+        monkeypatch.setattr(
+            module.websockets,
+            "connect",
+            lambda *args, **kwargs: FakeConnection(websocket),
+        )
+        client = RecordingClient()
+
+        await client.connect()
+
+        assert client.closes == [(1000, "clean")]
+
+    asyncio.run(run())
+
+
+def test_connect_reports_protocol_close_once(monkeypatch):
+    async def run():
+        websocket = FakeWebSocket(
+            incoming=[
+                json.dumps(
+                    {
+                        "type": "error",
+                        "sid": 3,
+                        "seq": 1,
+                        "msg": {"code": 25, "msg": "buffer overflow"},
+                    }
+                )
+            ]
+        )
+        module = importlib.import_module("kalshi.websocket.client")
+        monkeypatch.setattr(module, "request_headers", lambda method, url: {})
+        monkeypatch.setattr(
+            module.websockets,
+            "connect",
+            lambda *args, **kwargs: FakeConnection(websocket),
+        )
+        client = RecordingClient()
+
+        await client.connect()
+
+        assert client.closes == [(1011, "WebSocket subscription buffer overflow")]
 
     asyncio.run(run())

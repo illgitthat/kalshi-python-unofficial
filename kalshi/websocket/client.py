@@ -37,21 +37,39 @@ class Client:
     async def connect(self, url: str | None = None):
         url = url or constants.WEBSOCKET_URL
         headers = request_headers("GET", url)
+        connected = False
+        close_code = None
+        close_reason = None
         try:
             async with websockets.connect(
                 url,
                 additional_headers=headers,
                 compression=None,
             ) as websocket:
+                connected = True
                 self.ws = websocket
                 self._orderbook_snapshots.clear()
                 self._sequence_by_subscription.clear()
                 await self.on_open()
                 await self.handler()
         except websockets.ConnectionClosed as error:
-            await self.on_close(error.code, error.reason)
+            close_code = error.code
+            close_reason = error.reason
         finally:
+            websocket = self.ws
             self.ws = None
+            if connected:
+                close_code = close_code or getattr(
+                    websocket,
+                    "close_code",
+                    None,
+                )
+                close_reason = close_reason or getattr(
+                    websocket,
+                    "close_reason",
+                    None,
+                )
+                await self.on_close(close_code, close_reason)
 
     async def run_forever(
         self,
@@ -227,10 +245,15 @@ class Client:
                     subscription_id=subscription_id,
                 )
             )
-            if payload.get("code") == 25 and self.ws is not None:
+            if payload.get("code") in {10, 25} and self.ws is not None:
+                reason = (
+                    "WebSocket channel error"
+                    if payload.get("code") == 10
+                    else "WebSocket subscription buffer overflow"
+                )
                 await self.ws.close(
                     code=1011,
-                    reason="WebSocket subscription buffer overflow",
+                    reason=reason,
                 )
                 return False
             return True

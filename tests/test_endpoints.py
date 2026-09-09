@@ -244,6 +244,24 @@ def test_event_live_data_uses_event_endpoint(recorded_request):
     assert call.kwargs["params"] == {"range": "game"}
 
 
+def test_event_metadata_uses_native_endpoint(recorded_request):
+    Market().GetEventMetadata("KXEVENT")
+
+    assert recorded_request.call_args.args[:2] == (
+        "GET",
+        "https://external-api.demo.kalshi.co/trade-api/v2/events/KXEVENT/metadata",
+    )
+
+
+def test_user_data_timestamp_uses_exchange_endpoint(recorded_request):
+    Exchange().GetUserDataTimestamp()
+
+    assert recorded_request.call_args.args[:2] == (
+        "GET",
+        "https://external-api.demo.kalshi.co/trade-api/v2/exchange/user_data_timestamp",
+    )
+
+
 def test_queue_positions_preserve_filters(recorded_request):
     Portfolio().GetOrderQueuePositions(
         market_tickers=["KXONE", "KXTWO"],
@@ -338,3 +356,24 @@ def test_cancel_all_orders_uses_subaccount_scope(recorded_request):
         "https://external-api.demo.kalshi.co/trade-api/v2/portfolio/events/orders",
     )
     assert call.kwargs["params"] == {"subaccount": 4}
+
+
+def test_cancel_all_orders_accepts_empty_204_response(monkeypatch):
+    response = Mock(status_code=204, content=b"")
+    monkeypatch.setattr(rest.WRITE_SESSION, "request", Mock(return_value=response))
+    module = importlib.import_module("kalshi.rest.portfolio")
+    monkeypatch.setattr(module, "request_headers", lambda method, url: {})
+
+    assert Portfolio().CancelAllOrders(subaccount=4) is None
+
+
+def test_batch_order_item_errors_remain_visible(recorded_request):
+    response = recorded_request.return_value
+    response.content = (
+        b'{"orders":[{"client_order_id":"one","order_id":null,'
+        b'"error":{"code":"rejected","message":"rejected"}}]}'
+    )
+
+    result = Portfolio().BatchCreateOrders([{"client_order_id": "one"}])
+
+    assert result["orders"][0]["error"]["code"] == "rejected"

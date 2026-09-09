@@ -16,5 +16,8 @@ class Exchange:
     def GetExchangeStatus(self):
         return get(api_url("exchange/status"))
 
+    def GetUserDataTimestamp(self):
+        return get(api_url("exchange/user_data_timestamp"))
+
 
 exchange = Exchange()

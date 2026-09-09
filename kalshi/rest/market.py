@@ -46,6 +46,9 @@ class Market:
             with_nested_markets=with_nested_markets,
         )
 
+    def GetEventMetadata(self, event_ticker: str):
+        return get(api_url(f"events/{event_ticker}/metadata"))
+
     def GetEventLiveData(
         self,
         event_ticker: str,

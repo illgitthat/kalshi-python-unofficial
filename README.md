@@ -39,6 +39,7 @@ from kalshi.rest import market
 
 live_markets = market.GetLiveMarkets(limit=100)
 upcoming_events = market.GetUpcomingEvents(with_milestones=True)
+metadata = market.GetEventMetadata("KXEVENT")
 ```
 
 Event status is derived from its child markets. Use `GetLiveMarkets()` or
@@ -113,6 +114,8 @@ costs. The SDK does not add sleeps or automatic rate limiting.
 
 Order groups, queue positions, event live data, and cancel-all controls are
 available from `portfolio` and `market`.
+`exchange.GetUserDataTimestamp()` reports portfolio-data freshness for
+reconciliation; it does not prove that an order is absent.
 
 ## WebSocket
 
