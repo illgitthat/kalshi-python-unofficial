@@ -7,12 +7,14 @@ September 9, 2026.
 ## Install
 
 ```bash
-uv add fastkalshi
+uv add "fastkalshi @ git+https://github.com/illgitthat/fastkalshi.git"
 ```
 
 Python 3.14 or newer is required. Demo is the default environment.
 Install the optional plotting utilities with
-`uv add "fastkalshi[analytics]"`.
+`uv add "fastkalshi[analytics] @ git+https://github.com/illgitthat/fastkalshi.git"`.
+
+After the first PyPI release, installation can use `uv add fastkalshi`.
 
 For local development:
 
