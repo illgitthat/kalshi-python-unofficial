@@ -276,6 +276,18 @@ def test_intra_exchange_transfer_rejects_unsafe_inputs(recorded_request):
             source_exchange_shard=0,
             destination_exchange_shard=3,
         )
+    with pytest.raises(
+        ValueError,
+        match="subaccounts are supported only",
+    ):
+        Portfolio().IntraExchangeInstanceTransfer(
+            source="event_contract",
+            destination="margined",
+            amount_centicents=10_000,
+            source_exchange_shard=0,
+            destination_exchange_shard=0,
+            source_subaccount=1,
+        )
 
 
 @pytest.mark.parametrize(

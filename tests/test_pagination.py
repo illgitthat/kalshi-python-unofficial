@@ -55,6 +55,12 @@ def test_paginate_rejects_invalid_page_limit_eagerly():
             "GetSubaccountTransfers",
             "transfers",
         ),
+        (
+            Portfolio(),
+            "IterIntraExchangeInstanceTransfers",
+            "GetIntraExchangeInstanceTransfers",
+            "transfers",
+        ),
     ],
 )
 def test_endpoint_iterators_use_bounded_pagination(

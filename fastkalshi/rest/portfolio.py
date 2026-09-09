@@ -371,6 +371,13 @@ class Portfolio:
                 or not 0 <= subaccount <= 63
             ):
                 raise ValueError(f"{name} must be an integer from 0 to 63")
+        if (source != "event_contract" or destination != "event_contract") and (
+            source_subaccount != 0 or destination_subaccount != 0
+        ):
+            raise ValueError(
+                "subaccounts are supported only for event_contract to "
+                "event_contract transfers"
+            )
         url = api_url("portfolio/intra_exchange_instance_transfer")
         response = self._authenticated_post_request(
             url,
@@ -412,6 +419,19 @@ class Portfolio:
             raise ValueError("transfer_id is required")
         url = api_url(f"portfolio/intra_exchange_instance_transfers/{transfer_id}")
         return self._authenticated_get_request(url)
+
+    def IterIntraExchangeInstanceTransfers(
+        self,
+        *,
+        max_pages: int | None = None,
+        **params,
+    ):
+        return paginate(
+            self.GetIntraExchangeInstanceTransfers,
+            "transfers",
+            max_pages=max_pages,
+            **params,
+        )
 
     def GetTargetBalanceAllocation(self):
         url = api_url("portfolio/target_balance_allocation")
