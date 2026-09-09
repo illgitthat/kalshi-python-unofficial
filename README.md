@@ -71,6 +71,10 @@ targets = structured_target.GetStructuredTargets(
 )
 ```
 
+Structured-target requests use the same 10-second default as other REST
+requests. Latency-sensitive callers can pass a shorter scalar timeout or a
+`(connect, read)` timeout tuple.
+
 ## Trade with V2 orders
 
 V2 orders use fixed-point strings. `bid` buys YES and `ask` sells YES.

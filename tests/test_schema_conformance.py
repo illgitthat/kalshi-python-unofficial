@@ -148,6 +148,10 @@ PARAMETER_ALIASES = {
     }
 }
 
+SDK_ONLY_PARAMETERS = {
+    (StructuredTarget, "GetStructuredTargets"): {"timeout"},
+}
+
 
 def _load_schema(url):
     with urllib.request.urlopen(url, timeout=30) as response:
@@ -210,13 +214,17 @@ def test_implemented_rest_signatures_match_current_openapi():
         expected = set(operation["parameters"]) - ignored
         signature = inspect.signature(getattr(owner, method_name))
         aliases = PARAMETER_ALIASES.get((owner, method_name), {})
+        sdk_only = SDK_ONLY_PARAMETERS.get((owner, method_name), set())
         actual = {
-            aliases.get(name, name) for name in signature.parameters if name != "self"
+            aliases.get(name, name)
+            for name in signature.parameters
+            if name != "self" and name not in sdk_only
         }
         supplied = {
             aliases.get(name, name)
             for name, parameter in signature.parameters.items()
             if name != "self"
+            and name not in sdk_only
             and (
                 parameter.default is inspect.Parameter.empty
                 or parameter.default is not None

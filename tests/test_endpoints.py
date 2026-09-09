@@ -1,7 +1,9 @@
 import importlib
 from unittest.mock import Mock
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
+from requests import Request
 
 from fastkalshi import constants
 from fastkalshi.rest import rest
@@ -365,6 +367,7 @@ def test_structured_targets_support_repeated_ids_and_filters(recorded_request):
         type="american_football_team",
         competition="NFL",
         cursor="next",
+        timeout=3.0,
     )
 
     call = recorded_request.call_args
@@ -379,6 +382,20 @@ def test_structured_targets_support_repeated_ids_and_filters(recorded_request):
         "page_size": 100,
         "cursor": "next",
     }
+    assert call.kwargs["timeout"] == 3.0
+
+    prepared = Request(
+        "GET",
+        call.args[1],
+        params=call.kwargs["params"],
+    ).prepare()
+    query = parse_qs(urlsplit(prepared.url).query)
+    assert query["ids"] == ["team-1", "team-2"]
+
+
+def test_structured_targets_reject_empty_ids():
+    with pytest.raises(ValueError, match="ids must not be empty"):
+        StructuredTarget().GetStructuredTargets(ids=[])
 
 
 def test_event_live_data_uses_event_endpoint(recorded_request):

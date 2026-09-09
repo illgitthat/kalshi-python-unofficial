@@ -1,7 +1,7 @@
 from fastkalshi.constants import api_url
 
 from .pagination import paginate
-from .rest import drop_none, get
+from .rest import DEFAULT_TIMEOUT, RequestTimeout, drop_none, get
 
 
 class StructuredTarget:
@@ -12,9 +12,14 @@ class StructuredTarget:
         competition: str | None = None,
         page_size: int = 100,
         cursor: str | None = None,
+        *,
+        timeout: RequestTimeout = DEFAULT_TIMEOUT,
     ):
+        if ids is not None and not ids:
+            raise ValueError("ids must not be empty")
         return get(
             api_url("structured_targets"),
+            timeout=timeout,
             **drop_none(
                 {
                     "ids": ids,

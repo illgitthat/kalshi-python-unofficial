@@ -160,13 +160,18 @@ class Client:
         return await self.send_command("subscribe", params)
 
     async def unsubscribe(self, sids: list[int]):
+        if not sids or any(
+            isinstance(sid, bool) or not isinstance(sid, int) or sid < 1 for sid in sids
+        ):
+            raise ValueError("sids must contain positive integers")
         return await self.send_command("unsubscribe", {"sids": sids})
 
     async def update_subscription(
         self,
-        sid: int,
         action: SubscriptionAction,
         *,
+        sid: int | None = None,
+        sids: list[int] | None = None,
         market_ticker: str | None = None,
         market_tickers: list[str] | None = None,
         market_id: str | None = None,
@@ -175,10 +180,22 @@ class Client:
         index_ids: list[str] | None = None,
         underlying_tickers: list[str] | None = None,
     ):
-        params: dict[str, Any] = {
-            "sid": sid,
-            "action": action,
-        }
+        if (sid is None) == (sids is None):
+            raise ValueError("provide exactly one of sid or sids")
+        if sid is not None and (
+            isinstance(sid, bool) or not isinstance(sid, int) or sid < 1
+        ):
+            raise ValueError("sid must be a positive integer")
+        if sids is not None and (
+            len(sids) != 1
+            or isinstance(sids[0], bool)
+            or not isinstance(sids[0], int)
+            or sids[0] < 1
+        ):
+            raise ValueError("sids must contain exactly one positive integer")
+
+        params: dict[str, Any] = {"action": action}
+        params["sid" if sid is not None else "sids"] = sid if sid is not None else sids
         params.update(
             {
                 key: value

@@ -119,14 +119,15 @@ def test_subscription_control_methods_build_current_commands():
         assert await client.unsubscribe([3, 5]) == 1
         assert (
             await client.update_subscription(
-                7,
                 "add_markets",
+                sids=[7],
                 market_tickers=["KXONE", "KXTWO"],
                 send_initial_snapshot=True,
             )
             == 2
         )
-        assert await client.list_subscriptions() == 3
+        assert await client.update_subscription("indexlist", sid=8) == 3
+        assert await client.list_subscriptions() == 4
 
         assert client.ws.messages == [
             {
@@ -138,7 +139,7 @@ def test_subscription_control_methods_build_current_commands():
                 "id": 2,
                 "cmd": "update_subscription",
                 "params": {
-                    "sid": 7,
+                    "sids": [7],
                     "action": "add_markets",
                     "market_tickers": ["KXONE", "KXTWO"],
                     "send_initial_snapshot": True,
@@ -146,9 +147,45 @@ def test_subscription_control_methods_build_current_commands():
             },
             {
                 "id": 3,
+                "cmd": "update_subscription",
+                "params": {
+                    "sid": 8,
+                    "action": "indexlist",
+                },
+            },
+            {
+                "id": 4,
                 "cmd": "list_subscriptions",
             },
         ]
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda client: client.unsubscribe([]),
+        lambda client: client.update_subscription("add_markets"),
+        lambda client: client.update_subscription(
+            "add_markets",
+            sid=1,
+            sids=[1],
+        ),
+        lambda client: client.update_subscription(
+            "add_markets",
+            sids=[1, 2],
+        ),
+    ],
+)
+def test_subscription_control_methods_reject_invalid_ids(call):
+    async def run():
+        client = Client()
+        client.ws = FakeWebSocket()
+
+        with pytest.raises(ValueError):
+            await call(client)
+        assert client.ws.messages == []
 
     asyncio.run(run())
 
