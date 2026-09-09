@@ -61,6 +61,21 @@ class KalshiResponseError(ValueError):
         )
 
 
+class KalshiResponseContractError(ValueError):
+    def __init__(
+        self,
+        method: str,
+        url: str,
+        payload: dict,
+        message: str,
+    ):
+        self.method = method
+        self.url = url
+        self.payload = payload
+        self.outcome_unknown = method not in {"GET", "HEAD", "OPTIONS"}
+        super().__init__(message)
+
+
 def drop_none(dictionary: dict):
     return {key: value for key, value in dictionary.items() if value is not None}
 

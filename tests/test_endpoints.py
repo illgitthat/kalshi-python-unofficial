@@ -222,6 +222,113 @@ def test_subaccount_transfer_preserves_id_and_units(recorded_request):
     }
 
 
+def test_intra_exchange_transfer_uses_centicents_and_explicit_routes(
+    recorded_request,
+):
+    recorded_request.return_value.content = b'{"transfer_id":"transfer-1"}'
+    result = Portfolio().IntraExchangeInstanceTransfer(
+        source="event_contract",
+        destination="event_contract",
+        amount_centicents=10_000,
+        source_exchange_shard=0,
+        destination_exchange_shard=3,
+        source_subaccount=0,
+        destination_subaccount=0,
+    )
+
+    assert result == {"transfer_id": "transfer-1"}
+    call = recorded_request.call_args
+    assert call.args[:2] == (
+        "POST",
+        "https://external-api.demo.kalshi.co/trade-api/v2/portfolio/intra_exchange_instance_transfer",
+    )
+    assert call.kwargs["json"] == {
+        "source": "event_contract",
+        "destination": "event_contract",
+        "amount": 10_000,
+        "source_exchange_shard": 0,
+        "destination_exchange_shard": 3,
+        "source_subaccount": 0,
+        "destination_subaccount": 0,
+    }
+
+
+def test_intra_exchange_transfer_rejects_unsafe_inputs(recorded_request):
+    with pytest.raises(TypeError):
+        Portfolio().IntraExchangeInstanceTransfer(
+            source="event_contract",
+            destination="event_contract",
+            amount_centicents=10_000,
+        )
+    with pytest.raises(ValueError, match="source_exchange_shard"):
+        Portfolio().IntraExchangeInstanceTransfer(
+            source="event_contract",
+            destination="event_contract",
+            amount_centicents=10_000,
+            source_exchange_shard=-1,
+            destination_exchange_shard=3,
+        )
+    with pytest.raises(ValueError, match="amount_centicents"):
+        Portfolio().IntraExchangeInstanceTransfer(
+            source="event_contract",
+            destination="event_contract",
+            amount_centicents=0,
+            source_exchange_shard=0,
+            destination_exchange_shard=3,
+        )
+
+
+@pytest.mark.parametrize(
+    "response_body",
+    [b'{"ok":true}', b'{"transfer_id":""}', b'{"transfer_id":"   "}'],
+)
+def test_intra_exchange_transfer_requires_transfer_id(
+    recorded_request,
+    response_body,
+):
+    recorded_request.return_value.content = response_body
+    with pytest.raises(
+        rest.KalshiResponseContractError,
+        match="did not contain transfer_id",
+    ) as caught:
+        Portfolio().IntraExchangeInstanceTransfer(
+            source="event_contract",
+            destination="event_contract",
+            amount_centicents=10_000,
+            source_exchange_shard=0,
+            destination_exchange_shard=3,
+        )
+
+    assert caught.value.outcome_unknown is True
+
+
+def test_intra_exchange_transfer_reads_and_target_allocation(recorded_request):
+    portfolio = Portfolio()
+    recorded_request.return_value.content = b'{"transfers":[],"cursor":""}'
+    history = portfolio.GetIntraExchangeInstanceTransfers(
+        limit=25,
+        cursor="next",
+    )
+    history_call = recorded_request.call_args
+    recorded_request.return_value.content = (
+        b'{"transfer":{"transfer_id":"transfer-1","status":"complete"}}'
+    )
+    transfer = portfolio.GetIntraExchangeInstanceTransfer("transfer-1")
+    transfer_call = recorded_request.call_args
+    recorded_request.return_value.content = b'{"allocations":[]}'
+    allocation = portfolio.GetTargetBalanceAllocation()
+    allocation_call = recorded_request.call_args
+
+    assert history == {"transfers": [], "cursor": ""}
+    assert history_call.kwargs["params"] == {"limit": 25, "cursor": "next"}
+    assert transfer["transfer"]["status"] == "complete"
+    assert transfer_call.args[1].endswith(
+        "/portfolio/intra_exchange_instance_transfers/transfer-1"
+    )
+    assert allocation == {"allocations": []}
+    assert allocation_call.args[1].endswith("/portfolio/target_balance_allocation")
+
+
 def test_milestone_live_data_uses_preferred_endpoint(recorded_request):
     Milestone().GetLiveData("milestone-1", include_player_stats=True)
 

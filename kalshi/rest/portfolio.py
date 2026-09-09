@@ -2,7 +2,15 @@ from kalshi.auth import request_headers
 from kalshi.constants import api_url
 
 from .pagination import paginate
-from .rest import WRITE_SESSION, delete, drop_none, get, post, put
+from .rest import (
+    WRITE_SESSION,
+    KalshiResponseContractError,
+    delete,
+    drop_none,
+    get,
+    post,
+    put,
+)
 
 
 class Portfolio:
@@ -320,6 +328,93 @@ class Portfolio:
 
     def GetPortfolioRestingOrderTotalValue(self):
         url = api_url("portfolio/summary/total_resting_order_value")
+        return self._authenticated_get_request(url)
+
+    def IntraExchangeInstanceTransfer(
+        self,
+        *,
+        source: str,
+        destination: str,
+        amount_centicents: int,
+        source_exchange_shard: int,
+        destination_exchange_shard: int,
+        source_subaccount: int = 0,
+        destination_subaccount: int = 0,
+    ):
+        if source not in {"event_contract", "margined"}:
+            raise ValueError("source must be event_contract or margined")
+        if destination not in {"event_contract", "margined"}:
+            raise ValueError("destination must be event_contract or margined")
+        if (
+            isinstance(amount_centicents, bool)
+            or not isinstance(amount_centicents, int)
+            or amount_centicents <= 0
+        ):
+            raise ValueError("amount_centicents must be a positive integer")
+        for name, shard in (
+            ("source_exchange_shard", source_exchange_shard),
+            ("destination_exchange_shard", destination_exchange_shard),
+        ):
+            if (
+                isinstance(shard, bool)
+                or not isinstance(shard, int)
+                or not 0 <= shard <= 100
+            ):
+                raise ValueError(f"{name} must be an integer from 0 to 100")
+        for name, subaccount in (
+            ("source_subaccount", source_subaccount),
+            ("destination_subaccount", destination_subaccount),
+        ):
+            if (
+                isinstance(subaccount, bool)
+                or not isinstance(subaccount, int)
+                or not 0 <= subaccount <= 63
+            ):
+                raise ValueError(f"{name} must be an integer from 0 to 63")
+        url = api_url("portfolio/intra_exchange_instance_transfer")
+        response = self._authenticated_post_request(
+            url,
+            {
+                "source": source,
+                "destination": destination,
+                "amount": amount_centicents,
+                "source_exchange_shard": source_exchange_shard,
+                "destination_exchange_shard": destination_exchange_shard,
+                "source_subaccount": source_subaccount,
+                "destination_subaccount": destination_subaccount,
+            },
+        )
+        transfer_id = (
+            response.get("transfer_id") if isinstance(response, dict) else None
+        )
+        if not isinstance(transfer_id, str) or not transfer_id.strip():
+            raise KalshiResponseContractError(
+                "POST",
+                url,
+                response if isinstance(response, dict) else {},
+                "Kalshi transfer response did not contain transfer_id",
+            )
+        return response
+
+    def GetIntraExchangeInstanceTransfers(
+        self,
+        limit: int = 100,
+        cursor: str | None = None,
+    ):
+        url = api_url("portfolio/intra_exchange_instance_transfers")
+        return self._authenticated_get_request(
+            url,
+            **drop_none({"limit": limit, "cursor": cursor}),
+        )
+
+    def GetIntraExchangeInstanceTransfer(self, transfer_id: str):
+        if not isinstance(transfer_id, str) or not transfer_id.strip():
+            raise ValueError("transfer_id is required")
+        url = api_url(f"portfolio/intra_exchange_instance_transfers/{transfer_id}")
+        return self._authenticated_get_request(url)
+
+    def GetTargetBalanceAllocation(self):
+        url = api_url("portfolio/target_balance_allocation")
         return self._authenticated_get_request(url)
 
     def CreateOrder(

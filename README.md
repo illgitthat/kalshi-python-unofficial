@@ -104,6 +104,10 @@ live_data = milestone.GetLiveData(milestones["milestones"][0]["id"])
 ```
 
 Subaccounts require a supported Direct account and API tier.
+Primary funds can be moved between exchange shards with
+`IntraExchangeInstanceTransfer()` and verified through its status methods.
+The transfer amount is in centicents (`10_000` = `$1.00`), both shard indexes
+are required, and a returned transfer ID must be polled before using the funds.
 
 ## Rate-limit information
 

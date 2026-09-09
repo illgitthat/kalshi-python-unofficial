@@ -85,6 +85,34 @@ IMPLEMENTED_OPERATIONS = [
         True,
         set(),
     ),
+    (
+        Portfolio,
+        "IntraExchangeInstanceTransfer",
+        "IntraExchangeInstanceTransfer",
+        True,
+        set(),
+    ),
+    (
+        Portfolio,
+        "GetIntraExchangeInstanceTransfers",
+        "GetIntraExchangeInstanceTransfers",
+        True,
+        set(),
+    ),
+    (
+        Portfolio,
+        "GetIntraExchangeInstanceTransfer",
+        "GetIntraExchangeInstanceTransfer",
+        True,
+        set(),
+    ),
+    (
+        Portfolio,
+        "GetTargetBalanceAllocation",
+        "GetTargetBalanceAllocation",
+        True,
+        set(),
+    ),
     (Portfolio, "CreateOrder", "CreateOrderV2", True, set()),
     (Portfolio, "BatchCreateOrders", "BatchCreateOrdersV2", True, set()),
     (Portfolio, "AmendOrder", "AmendOrderV2", True, set()),
@@ -103,6 +131,12 @@ IMPLEMENTED_OPERATIONS = [
     (Portfolio, "GetSubaccountBalances", "GetSubaccountBalances", True, set()),
     (Portfolio, "GetSubaccountTransfers", "GetSubaccountTransfers", True, set()),
 ]
+
+PARAMETER_ALIASES = {
+    (Portfolio, "IntraExchangeInstanceTransfer"): {
+        "amount_centicents": "amount",
+    }
+}
 
 
 def _load_schema(url):
@@ -165,9 +199,12 @@ def test_implemented_rest_signatures_match_current_openapi():
         operation = operations[operation_id]
         expected = set(operation["parameters"]) - ignored
         signature = inspect.signature(getattr(owner, method_name))
-        actual = set(signature.parameters) - {"self"}
+        aliases = PARAMETER_ALIASES.get((owner, method_name), {})
+        actual = {
+            aliases.get(name, name) for name in signature.parameters if name != "self"
+        }
         supplied = {
-            name
+            aliases.get(name, name)
             for name, parameter in signature.parameters.items()
             if name != "self"
             and (
