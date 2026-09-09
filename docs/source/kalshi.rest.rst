@@ -28,6 +28,14 @@ kalshi.rest.market module
    :undoc-members:
    :show-inheritance:
 
+kalshi.rest.milestone module
+----------------------------
+
+.. automodule:: kalshi.rest.milestone
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 kalshi.rest.portfolio module
 ----------------------------
 

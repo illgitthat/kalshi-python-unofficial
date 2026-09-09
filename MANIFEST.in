@@ -1,13 +1,3 @@
-# Include essential files
 include README.md
 include LICENSE
 include requirements.txt
-
-# Exclude notebook files
-exclude *.ipynb
-recursive-exclude * *.ipynb
-
-# Exclude other non-essential files
-exclude example.env
-exclude .gitignore
-exclude .gitattributes 

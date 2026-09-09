@@ -1,1 +1,3 @@
-from .client import Client
+from .client import Client, KalshiWebSocketError
+
+__all__ = ["Client", "KalshiWebSocketError"]

@@ -1,22 +1,20 @@
+from kalshi.constants import api_url
+
 from .rest import get
-import kalshi.constants
 
 
 class Exchange:
     def GetExchangeAnnouncements(self):
-        return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/exchange/announcements"
+        raise NotImplementedError(
+            "The current Kalshi OpenAPI specification does not expose "
+            "/exchange/announcements."
         )
 
     def GetExchangeSchedule(self):
-        return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/exchange/schedule"
-        )
+        return get(api_url("exchange/schedule"))
 
     def GetExchangeStatus(self):
-        return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/exchange/status"
-        )
+        return get(api_url("exchange/status"))
 
 
 exchange = Exchange()

@@ -1,20 +1,35 @@
-from .rest import get, get_kwargs, drop_none
-import kalshi.constants
+from kalshi.constants import api_url
+
+from .rest import drop_none, get
 
 
 class Market:
     def GetEvents(
         self,
-        limit: int = 100,
-        cursor: str = None,
-        status: str = None,
-        series_ticker: str = None,
+        limit: int = 200,
+        cursor: str | None = None,
+        status: str | None = None,
+        series_ticker: str | None = None,
         with_nested_markets: bool = False,
+        with_milestones: bool = False,
+        tickers: list[str] | None = None,
+        min_close_ts: int | None = None,
+        min_updated_ts: int | None = None,
     ):
-        return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/events",
-            **drop_none(get_kwargs()),
+        params = drop_none(
+            {
+                "limit": limit,
+                "cursor": cursor,
+                "status": status,
+                "series_ticker": series_ticker,
+                "with_nested_markets": with_nested_markets,
+                "with_milestones": with_milestones,
+                "tickers": ",".join(tickers) if tickers else None,
+                "min_close_ts": min_close_ts,
+                "min_updated_ts": min_updated_ts,
+            }
         )
+        return get(api_url("events"), **params)
 
     def GetEvent(
         self,
@@ -22,61 +37,80 @@ class Market:
         with_nested_markets: bool = False,
     ):
         return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/events/{event_ticker}",
+            api_url(f"events/{event_ticker}"),
             with_nested_markets=with_nested_markets,
         )
 
     def GetMarkets(
         self,
         limit: int = 100,
-        cursor: str = None,
-        event_ticker: str = None,
-        series_ticker: str = None,
-        max_close_ts: int = None,
-        min_close_ts: int = None,
-        status: str = None,
-        tickers: list[str] = None,
+        cursor: str | None = None,
+        event_ticker: str | None = None,
+        series_ticker: str | None = None,
+        min_created_ts: int | None = None,
+        max_created_ts: int | None = None,
+        min_updated_ts: int | None = None,
+        max_close_ts: int | None = None,
+        min_close_ts: int | None = None,
+        min_settled_ts: int | None = None,
+        max_settled_ts: int | None = None,
+        status: str | None = None,
+        tickers: list[str] | None = None,
+        mve_filter: str | None = None,
     ):
-        args = drop_none(get_kwargs())
-        if "tickers" in args:
-            args["tickers"] = ",".join(args["tickers"])
-        return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets",
-            **args,
+        params = drop_none(
+            {
+                "limit": limit,
+                "cursor": cursor,
+                "event_ticker": event_ticker,
+                "series_ticker": series_ticker,
+                "min_created_ts": min_created_ts,
+                "max_created_ts": max_created_ts,
+                "min_updated_ts": min_updated_ts,
+                "max_close_ts": max_close_ts,
+                "min_close_ts": min_close_ts,
+                "min_settled_ts": min_settled_ts,
+                "max_settled_ts": max_settled_ts,
+                "status": status,
+                "tickers": ",".join(tickers) if tickers else None,
+                "mve_filter": mve_filter,
+            }
         )
+        return get(api_url("markets"), **params)
 
     def GetTrades(
         self,
-        cursor: str = None,
+        cursor: str | None = None,
         limit: int = 100,
-        ticker: str = None,
-        min_ts: int = None,
-        max_ts: int = None,
+        ticker: str | None = None,
+        min_ts: int | None = None,
+        max_ts: int | None = None,
+        is_block_trade: bool | None = None,
     ):
         return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/trades",
-            **drop_none(get_kwargs()),
+            api_url("markets/trades"),
+            **drop_none(
+                {
+                    "cursor": cursor,
+                    "limit": limit,
+                    "ticker": ticker,
+                    "min_ts": min_ts,
+                    "max_ts": max_ts,
+                    "is_block_trade": is_block_trade,
+                }
+            ),
         )
 
     def GetMarket(self, ticker: str):
-        return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/{ticker}"
-        )
+        return get(api_url(f"markets/{ticker}"))
 
-    def GetMarketOrderbook(self, ticker: str, depth: int = None):
-        if depth is not None:
-            return get(
-                f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/{ticker}/orderbook",
-                depth=depth,
-            )
-        else:
-            return get(
-                f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/markets/{ticker}/orderbook"
-            )
+    def GetMarketOrderbook(self, ticker: str, depth: int | None = None):
+        return get(api_url(f"markets/{ticker}/orderbook"), depth=depth)
 
-    def GetSeries(self, series_ticker: str):
+    def GetSeries(self, series_ticker: str, include_volume: bool = False):
         return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/series/{series_ticker}"
+            api_url(f"series/{series_ticker}"),
+            include_volume=include_volume,
         )
 
     def GetMarketCandlesticks(
@@ -86,12 +120,34 @@ class Market:
         start_ts: int,
         end_ts: int,
         period_interval: int,
+        include_latest_before_start: bool = False,
     ):
         return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/series/{series_ticker}/markets/{ticker}/candlesticks",
+            api_url(f"series/{series_ticker}/markets/{ticker}/candlesticks"),
             start_ts=start_ts,
             end_ts=end_ts,
             period_interval=period_interval,
+            include_latest_before_start=include_latest_before_start,
+        )
+
+    def GetLiveMarkets(self, **kwargs):
+        return self.GetMarkets(status="open", **kwargs)
+
+    def GetUpcomingMarkets(self, **kwargs):
+        return self.GetMarkets(status="unopened", **kwargs)
+
+    def GetLiveEvents(self, with_nested_markets: bool = True, **kwargs):
+        return self.GetEvents(
+            status="open",
+            with_nested_markets=with_nested_markets,
+            **kwargs,
+        )
+
+    def GetUpcomingEvents(self, with_nested_markets: bool = True, **kwargs):
+        return self.GetEvents(
+            status="unopened",
+            with_nested_markets=with_nested_markets,
+            **kwargs,
         )
 
 

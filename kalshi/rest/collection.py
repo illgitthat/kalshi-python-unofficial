@@ -1,25 +1,24 @@
-from .rest import get, get_kwargs, drop_none
-import kalshi.constants
+from kalshi.constants import api_url
+
+from .rest import drop_none, get, get_kwargs
 
 
 class Collection:
     def GetMultivariateEventCollections(
         self,
-        status: str = None,
-        associated_event_ticker: str = None,
-        series_ticker: str = None,
-        limit: int = None,
-        cursor: str = None,
+        status: str | None = None,
+        associated_event_ticker: str | None = None,
+        series_ticker: str | None = None,
+        limit: int | None = None,
+        cursor: str | None = None,
     ):
         return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/multivariate_event_collections",
+            api_url("multivariate_event_collections"),
             **drop_none(get_kwargs()),
         )
 
     def GetMultivariateEventCollection(self, collection_ticker: str):
-        return get(
-            f"{kalshi.constants.BASE_URL}{kalshi.constants.BASE_PATH}/multivariate_event_collections/{collection_ticker}"
-        )
+        return get(api_url(f"multivariate_event_collections/{collection_ticker}"))
 
 
 collection = Collection()

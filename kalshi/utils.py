@@ -52,7 +52,7 @@ def get_all_orders(limit: int = 100, status: str = None,
     Returns:
         List of all orders
     """
-    from kalshi_api.rest import portfolio
+    from kalshi.rest import portfolio
     
     all_orders = []
     cursor = None
@@ -77,14 +77,19 @@ def cancel_all_resting_orders(ticker: str = None, event_ticker: str = None) -> D
     Returns:
         Dictionary with cancellation results
     """
-    from kalshi_api.rest import portfolio
+    from kalshi.rest import portfolio
     
     to_cancel = get_all_orders(status="resting", ticker=ticker, event_ticker=event_ticker)
     results = []
     for o in to_cancel:
         oid = o.get("order_id")
         try:
-            resp = portfolio.CancelOrder(order_id=oid)
+            resp = portfolio.CancelOrder(
+                order_id=oid,
+                market_ticker=o.get("ticker"),
+                subaccount=o.get("subaccount"),
+                exchange_index=o.get("exchange_index"),
+            )
             results.append({"order_id": oid, "ok": True, "response": resp})
         except Exception as e:
             results.append({"order_id": oid, "ok": False, "error": str(e)})
