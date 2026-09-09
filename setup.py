@@ -12,7 +12,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/illgitthat/kalshi-python-unofficial",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    install_requires=["websockets>=10.0", "Requests", "cryptography"],
+    install_requires=["websockets>=10.0", "Requests", "cryptography", "orjson"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.14",

@@ -14,10 +14,10 @@ from kalshi.rest.portfolio import Portfolio
 @pytest.fixture
 def recorded_request(monkeypatch):
     constants.use_demo()
-    response = Mock(status_code=200, content=b"json")
-    response.json.return_value = {"ok": True}
+    response = Mock(status_code=200, content=b'{"ok":true}')
     request = Mock(return_value=response)
     monkeypatch.setattr(rest.SESSION, "request", request)
+    monkeypatch.setattr(rest.WRITE_SESSION, "request", request)
 
     portfolio_module = importlib.import_module("kalshi.rest.portfolio")
     market_module = importlib.import_module("kalshi.rest.market")
@@ -77,6 +77,26 @@ def test_create_order_uses_v2_fixed_point_payload(recorded_request):
         "subaccount": 2,
         "exchange_index": -1,
     }
+
+
+def test_portfolio_warmup_uses_mutation_session(monkeypatch):
+    constants.use_demo()
+    response = Mock(status_code=200, content=b'{"balance":"0.0000"}')
+    read_request = Mock(return_value=response)
+    write_request = Mock(return_value=response)
+    monkeypatch.setattr(rest.SESSION, "request", read_request)
+    monkeypatch.setattr(rest.WRITE_SESSION, "request", write_request)
+    portfolio_module = importlib.import_module("kalshi.rest.portfolio")
+    monkeypatch.setattr(
+        portfolio_module,
+        "request_headers",
+        lambda method, url: {},
+    )
+
+    Portfolio().Warmup()
+
+    assert read_request.call_count == 0
+    assert write_request.call_count == 1
 
 
 def test_orderbook_request_is_authenticated(recorded_request):

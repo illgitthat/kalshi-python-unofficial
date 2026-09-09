@@ -1,6 +1,7 @@
 cryptography
 Requests
 websockets
+orjson
 numpy
 pandas
 matplotlib

@@ -1,9 +1,9 @@
 import asyncio
 import inspect
-import json
 import logging
 from typing import Any
 
+import orjson
 import websockets
 from websockets.exceptions import WebSocketException
 
@@ -39,11 +39,16 @@ class Client:
         url = url or constants.WEBSOCKET_URL
         headers = request_headers("GET", url)
         if "additional_headers" in inspect.signature(websockets.connect).parameters:
-            connection = websockets.connect(url, additional_headers=headers)
+            connection = websockets.connect(
+                url,
+                additional_headers=headers,
+                compression=None,
+            )
         else:
             connection = websockets.connect(  # type: ignore[call-arg]
                 url,
                 extra_headers=headers,
+                compression=None,
             )
 
         try:
@@ -117,7 +122,7 @@ class Client:
         message = {"id": self.message_id, "cmd": command}
         if params is not None:
             message["params"] = params
-        await self.ws.send(json.dumps(message))
+        await self.ws.send(orjson.dumps(message).decode())
         command_id = self.message_id
         self.message_id += 1
         return command_id
@@ -145,7 +150,7 @@ class Client:
         if websocket is None:
             raise RuntimeError("WebSocket is not connected")
         async for raw_message in websocket:
-            await self._handle_protocol_message(json.loads(raw_message))
+            await self._handle_protocol_message(orjson.loads(raw_message))
 
     async def _handle_protocol_message(self, message: dict):
         if message.get("type") == "error":

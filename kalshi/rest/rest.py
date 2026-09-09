@@ -1,9 +1,10 @@
-import json
 from typing import Any
 
+import orjson
 import requests
 
 SESSION = requests.Session()
+WRITE_SESSION = requests.Session()
 DEFAULT_TIMEOUT = 10.0
 
 
@@ -48,8 +49,8 @@ def _query_value(value: Any) -> Any:
 
 def _parse_error(response: requests.Response) -> KalshiAPIError:
     try:
-        payload = response.json()
-    except (requests.JSONDecodeError, json.JSONDecodeError, ValueError):
+        payload = orjson.loads(response.content)
+    except orjson.JSONDecodeError:
         payload = None
 
     error = payload.get("error", payload) if isinstance(payload, dict) else {}
@@ -73,6 +74,7 @@ def request(
     params: dict | None = None,
     body: dict | list | None = None,
     timeout: float = DEFAULT_TIMEOUT,
+    session: requests.Session | None = None,
 ):
     query = {
         key: _query_value(value)
@@ -80,8 +82,11 @@ def request(
         if value is not None
     }
     method = method.upper()
+    active_session = session or (
+        SESSION if method in {"GET", "HEAD", "OPTIONS"} else WRITE_SESSION
+    )
     try:
-        response = SESSION.request(
+        response = active_session.request(
             method,
             url,
             params=query or None,
@@ -96,11 +101,11 @@ def request(
         raise _parse_error(response)
     if response.status_code == 204 or not response.content:
         return None
-    return response.json()
+    return orjson.loads(response.content)
 
 
-def get(url, headers=None, **kwargs):
-    return request("GET", url, headers=headers, params=kwargs)
+def get(url, headers=None, session=None, **kwargs):
+    return request("GET", url, headers=headers, params=kwargs, session=session)
 
 
 def post(url, headers=None, body=None, **kwargs):

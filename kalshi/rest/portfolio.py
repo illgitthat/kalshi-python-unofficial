@@ -1,7 +1,7 @@
 from kalshi.auth import request_headers
 from kalshi.constants import api_url
 
-from .rest import delete, drop_none, get, post
+from .rest import WRITE_SESSION, delete, drop_none, get, post
 
 
 class Portfolio:
@@ -43,6 +43,14 @@ class Portfolio:
                     "exchange_index": exchange_index,
                 }
             ),
+        )
+
+    def Warmup(self):
+        url = api_url("portfolio/balance")
+        return get(
+            url,
+            headers=request_headers("GET", url),
+            session=WRITE_SESSION,
         )
 
     def GetFills(

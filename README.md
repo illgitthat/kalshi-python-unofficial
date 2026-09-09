@@ -63,6 +63,8 @@ may have reached Kalshi.
 
 Always provide a unique `client_order_id`. Validate prices against the
 market's `price_ranges`, and inspect every result in a batch response.
+Call `portfolio.Warmup()` during startup to prepare the dedicated mutation
+connection before a time-sensitive order.
 
 ## Subaccounts and milestones
 

@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+import orjson
 import pytest
 import requests
 
@@ -9,16 +10,15 @@ from kalshi.rest import rest
 def response(status, payload=None, *, text="", reason=""):
     result = Mock()
     result.status_code = status
-    result.content = b"" if payload is None else b"json"
+    result.content = b"" if payload is None else orjson.dumps(payload)
     result.text = text
     result.reason = reason
-    result.json.return_value = payload
     return result
 
 
 def test_request_accepts_empty_success(monkeypatch):
     monkeypatch.setattr(
-        rest.SESSION,
+        rest.WRITE_SESSION,
         "request",
         Mock(return_value=response(204)),
     )
@@ -28,7 +28,7 @@ def test_request_accepts_empty_success(monkeypatch):
 
 def test_request_raises_structured_api_error(monkeypatch):
     monkeypatch.setattr(
-        rest.SESSION,
+        rest.WRITE_SESSION,
         "request",
         Mock(
             return_value=response(
@@ -67,6 +67,19 @@ def test_request_does_not_retry_failures(monkeypatch):
     assert request.call_count == 1
 
 
+def test_mutations_use_a_separate_session(monkeypatch):
+    read_request = Mock(return_value=response(200, {}))
+    write_request = Mock(return_value=response(201, {}))
+    monkeypatch.setattr(rest.SESSION, "request", read_request)
+    monkeypatch.setattr(rest.WRITE_SESSION, "request", write_request)
+
+    rest.request("GET", "https://example.test/markets")
+    rest.request("POST", "https://example.test/orders", body={})
+
+    assert read_request.call_count == 1
+    assert write_request.call_count == 1
+
+
 @pytest.mark.parametrize(
     ("method", "outcome_unknown"),
     [("GET", False), ("POST", True), ("DELETE", True)],
@@ -78,6 +91,7 @@ def test_transport_errors_mark_uncertain_mutations(
 ):
     request = Mock(side_effect=requests.Timeout("timed out"))
     monkeypatch.setattr(rest.SESSION, "request", request)
+    monkeypatch.setattr(rest.WRITE_SESSION, "request", request)
 
     with pytest.raises(rest.KalshiTransportError) as caught:
         rest.request(method, "https://example.test/orders")
