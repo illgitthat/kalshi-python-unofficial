@@ -1,9 +1,9 @@
-.. kalshi-python-unofficial documentation master file, created by
+.. fastkalshi documentation master file, created by
    sphinx-quickstart on Sun Jan 19 15:08:15 2025.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-kalshi-python-unofficial documentation
+fastkalshi documentation
 ======================================
 
 .. toctree::
@@ -11,8 +11,6 @@ kalshi-python-unofficial documentation
    :caption: Contents:
 
    modules
-   kalshi.rest
-   kalshi.websocket
 
 Indices and tables
 ==================

@@ -1,5 +1,6 @@
 import os
 import sys
+from importlib.metadata import version as package_version
 
 sys.path.insert(0, os.path.abspath("../../"))
 
@@ -11,10 +12,10 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "kalshi-python-unofficial"
-copyright = "2025, humz2k"
+project = "fastkalshi"
+copyright = "2026, humz2k"
 author = "humz2k"
-release = "0.0.1"
+release = package_version("fastkalshi")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -34,4 +35,3 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
