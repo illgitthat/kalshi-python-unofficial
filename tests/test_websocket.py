@@ -334,6 +334,10 @@ def test_buffer_overflow_stops_buffered_deltas():
     "message",
     [
         {"type": "error", "msg": "failure"},
+        {"type": "error", "msg": {"code": [], "msg": "failure"}},
+        {"type": "error", "msg": {"code": {}, "msg": "failure"}},
+        {"type": "error", "msg": {"code": True, "msg": "failure"}},
+        {"type": "error", "msg": {"code": 10, "msg": []}},
         {
             "type": "orderbook_snapshot",
             "sid": [],

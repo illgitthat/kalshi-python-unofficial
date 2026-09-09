@@ -237,18 +237,28 @@ class Client:
                 return await self._reject_protocol_message(
                     "WebSocket error payload must be an object"
                 )
+            code = payload.get("code")
+            error_message = payload.get("msg")
+            if isinstance(code, bool) or not isinstance(code, int):
+                return await self._reject_protocol_message(
+                    "WebSocket error code must be an integer"
+                )
+            if not isinstance(error_message, str):
+                return await self._reject_protocol_message(
+                    "WebSocket error message must be a string"
+                )
             await self.on_error(
                 KalshiWebSocketError(
-                    payload.get("msg", "Kalshi WebSocket error"),
-                    code=payload.get("code"),
+                    error_message,
+                    code=code,
                     command_id=message.get("id"),
                     subscription_id=subscription_id,
                 )
             )
-            if payload.get("code") in {10, 25} and self.ws is not None:
+            if code in {10, 25} and self.ws is not None:
                 reason = (
                     "WebSocket channel error"
-                    if payload.get("code") == 10
+                    if code == 10
                     else "WebSocket subscription buffer overflow"
                 )
                 await self.ws.close(
