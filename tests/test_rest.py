@@ -26,6 +26,21 @@ def test_request_accepts_empty_success(monkeypatch):
     assert rest.request("DELETE", "https://example.test/orders") is None
 
 
+@pytest.mark.parametrize(
+    ("method", "content"),
+    [
+        ("HEAD", b""),
+        ("HEAD", b"ignored"),
+        ("OPTIONS", b""),
+    ],
+)
+def test_bodyless_read_responses_are_valid(monkeypatch, method, content):
+    request = Mock(return_value=Mock(status_code=200, content=content))
+    monkeypatch.setattr(rest.SESSION, "request", request)
+
+    assert rest.request(method, "https://example.test/resource") is None
+
+
 @pytest.mark.parametrize("content", [b"", b"{", b"null", b"[]"])
 def test_mutation_success_requires_valid_json(monkeypatch, content):
     response = Mock(status_code=201, content=content)

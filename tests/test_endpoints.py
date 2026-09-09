@@ -233,6 +233,12 @@ def test_milestone_live_data_uses_preferred_endpoint(recorded_request):
     assert call.kwargs["params"] == {"include_player_stats": "true"}
 
 
+def test_milestones_supply_required_default_limit(recorded_request):
+    Milestone().GetMilestones()
+
+    assert recorded_request.call_args.kwargs["params"] == {"limit": 100}
+
+
 def test_event_live_data_uses_event_endpoint(recorded_request):
     Market().GetEventLiveData("KXEVENT", range="game")
 

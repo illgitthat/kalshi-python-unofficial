@@ -129,7 +129,11 @@ def request(
         raise KalshiTransportError(method, url) from error
     if not 200 <= response.status_code < 300:
         raise _parse_error(response, method, url)
-    if response.status_code == 204:
+    if (
+        response.status_code == 204
+        or method == "HEAD"
+        or (method == "OPTIONS" and not response.content)
+    ):
         return None
     if not response.content:
         raise KalshiResponseError(method, url, response)
