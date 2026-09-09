@@ -22,6 +22,9 @@ uv run pytest
 uv build
 ```
 
+Publishing a GitHub Release tagged with the project version, such as
+`v0.2.0`, runs the checks and uploads the wheel and source archive.
+
 ```python
 import kalshi
 
