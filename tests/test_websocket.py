@@ -166,7 +166,13 @@ def test_sequenced_error_advances_sequence_before_next_delta():
                 "type": "orderbook_delta",
                 "sid": 3,
                 "seq": 3,
-                "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
+                "msg": {
+                    "market_ticker": "A",
+                    "market_id": MARKET_A_ID,
+                    "price_dollars": "0.5000",
+                    "delta_fp": "1.00",
+                    "side": "yes",
+                },
             }
         )
 
@@ -190,6 +196,9 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "msg": {
                             "market_ticker": "A",
                             "market_id": MARKET_A_ID,
+                            "price_dollars": "0.5000",
+                            "delta_fp": "1.00",
+                            "side": "yes",
                         },
                     }
                 ),
@@ -201,6 +210,9 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "msg": {
                             "market_ticker": "A",
                             "market_id": MARKET_A_ID,
+                            "price_dollars": "0.5000",
+                            "delta_fp": "1.00",
+                            "side": "yes",
                         },
                     }
                 ),
@@ -216,6 +228,9 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "msg": {
                             "market_ticker": "A",
                             "market_id": MARKET_A_ID,
+                            "price_dollars": "0.5000",
+                            "delta_fp": "1.00",
+                            "side": "yes",
                         },
                     }
                 ),
@@ -227,6 +242,9 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "msg": {
                             "market_ticker": "A",
                             "market_id": MARKET_A_ID,
+                            "price_dollars": "0.5000",
+                            "delta_fp": "1.00",
+                            "side": "yes",
                         },
                     }
                 ),
@@ -238,6 +256,9 @@ def test_reconnect_waits_for_each_market_snapshot(monkeypatch):
                         "msg": {
                             "market_ticker": "A",
                             "market_id": MARKET_A_ID,
+                            "price_dollars": "0.5000",
+                            "delta_fp": "1.00",
+                            "side": "yes",
                         },
                     }
                 ),
@@ -329,7 +350,13 @@ def test_buffer_overflow_stops_buffered_deltas():
                 "type": "orderbook_delta",
                 "sid": 3,
                 "seq": 3,
-                "msg": {"market_ticker": "A", "market_id": MARKET_A_ID},
+                "msg": {
+                    "market_ticker": "A",
+                    "market_id": MARKET_A_ID,
+                    "price_dollars": "0.5000",
+                    "delta_fp": "1.00",
+                    "side": "yes",
+                },
             },
         ]
         client = RecordingClient()
@@ -384,6 +411,41 @@ def test_buffer_overflow_stops_buffered_deltas():
             "sid": 1,
             "seq": 1,
             "msg": {"market_ticker": "A", "market_id": {}},
+        },
+        {
+            "type": "orderbook_delta",
+            "sid": 1,
+            "seq": 1,
+            "msg": {
+                "market_ticker": "A",
+                "market_id": MARKET_A_ID,
+                "price_dollars": [],
+                "delta_fp": "1.00",
+                "side": "yes",
+            },
+        },
+        {
+            "type": "orderbook_delta",
+            "sid": 1,
+            "seq": 1,
+            "msg": {
+                "market_ticker": "A",
+                "market_id": MARKET_A_ID,
+                "price_dollars": "0.5000",
+                "side": "yes",
+            },
+        },
+        {
+            "type": "orderbook_delta",
+            "sid": 1,
+            "seq": 1,
+            "msg": {
+                "market_ticker": "A",
+                "market_id": MARKET_A_ID,
+                "price_dollars": "0.5000",
+                "delta_fp": "1.00",
+                "side": "bid",
+            },
         },
         {
             "type": "orderbook_snapshot",

@@ -214,6 +214,12 @@ def test_orderbook_required_fields_match_current_asyncapi():
         assert set(envelope["required"]) == {"type", "sid", "seq", "msg"}
         payload = _resolve(schema, envelope["properties"]["msg"])
         assert {"market_ticker", "market_id"} <= set(payload["required"])
+        if schema_name == "orderbookDeltaPayload":
+            assert {
+                "price_dollars",
+                "delta_fp",
+                "side",
+            } <= set(payload["required"])
         assert (
             _resolve(
                 schema,
@@ -266,7 +272,10 @@ def test_client_rejects_missing_asyncapi_orderbook_fields():
                 assert await client._handle_protocol_message(invalid) is False
                 assert isinstance(client.errors[0], KalshiWebSocketError)
                 assert client.ws.closed == (1002, "Invalid message")
-            for field in ("market_ticker", "market_id"):
+            payload_fields = ["market_ticker", "market_id"]
+            if message["type"] == "orderbook_delta":
+                payload_fields.extend(["price_dollars", "delta_fp", "side"])
+            for field in payload_fields:
                 client = _RecordingClient()
                 client.ws = _FakeWebSocket()
                 invalid = {

@@ -226,6 +226,21 @@ class Client:
                 return await self._reject_protocol_message(
                     f"{message_type} requires valid market_ticker and market_id fields"
                 )
+            if message_type == "orderbook_delta":
+                price = payload.get("price_dollars")
+                delta = payload.get("delta_fp")
+                side = payload.get("side")
+                if (
+                    not isinstance(price, str)
+                    or not price
+                    or not isinstance(delta, str)
+                    or not delta
+                    or side not in {"yes", "no"}
+                ):
+                    return await self._reject_protocol_message(
+                        "orderbook_delta requires string price_dollars and "
+                        "delta_fp fields plus side=yes|no"
+                    )
             market_key = market_id
             ready_markets = self._orderbook_snapshots.setdefault(
                 subscription_id,
