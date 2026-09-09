@@ -11,6 +11,7 @@ from fastkalshi.rest.exchange import Exchange
 from fastkalshi.rest.market import Market
 from fastkalshi.rest.milestone import Milestone
 from fastkalshi.rest.portfolio import Portfolio
+from fastkalshi.rest.structured_target import StructuredTarget
 from fastkalshi.websocket import Client, KalshiWebSocketError
 
 pytestmark = pytest.mark.schema
@@ -51,6 +52,13 @@ IMPLEMENTED_OPERATIONS = [
     (Milestone, "GetMilestones", "GetMilestones", False, set()),
     (Milestone, "GetMilestone", "GetMilestone", False, set()),
     (Milestone, "GetLiveData", "GetLiveDataByMilestone", False, set()),
+    (
+        StructuredTarget,
+        "GetStructuredTargets",
+        "GetStructuredTargets",
+        False,
+        set(),
+    ),
     (Portfolio, "GetBalance", "GetBalance", True, set()),
     (Portfolio, "GetFills", "GetFills", True, set()),
     (Portfolio, "GetOrders", "GetOrders", True, set()),

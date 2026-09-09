@@ -60,6 +60,17 @@ for item in market.IterMarkets(status="open", max_pages=3):
     print(item["ticker"])
 ```
 
+Resolve structured target IDs from event milestones without building requests:
+
+```python
+from fastkalshi.rest import structured_target
+
+targets = structured_target.GetStructuredTargets(
+    ids=["target-id-1", "target-id-2"],
+    page_size=2,
+)
+```
+
 ## Trade with V2 orders
 
 V2 orders use fixed-point strings. `bid` buys YES and `ask` sells YES.

@@ -9,6 +9,7 @@ from fastkalshi.rest.exchange import Exchange
 from fastkalshi.rest.market import Market
 from fastkalshi.rest.milestone import Milestone
 from fastkalshi.rest.portfolio import Portfolio
+from fastkalshi.rest.structured_target import StructuredTarget
 
 
 @pytest.fixture
@@ -356,6 +357,28 @@ def test_milestones_supply_required_default_limit(recorded_request):
     Milestone().GetMilestones()
 
     assert recorded_request.call_args.kwargs["params"] == {"limit": 100}
+
+
+def test_structured_targets_support_repeated_ids_and_filters(recorded_request):
+    StructuredTarget().GetStructuredTargets(
+        ids=["team-1", "team-2"],
+        type="american_football_team",
+        competition="NFL",
+        cursor="next",
+    )
+
+    call = recorded_request.call_args
+    assert call.args[:2] == (
+        "GET",
+        "https://external-api.demo.kalshi.co/trade-api/v2/structured_targets",
+    )
+    assert call.kwargs["params"] == {
+        "ids": ["team-1", "team-2"],
+        "type": "american_football_team",
+        "competition": "NFL",
+        "page_size": 100,
+        "cursor": "next",
+    }
 
 
 def test_event_live_data_uses_event_endpoint(recorded_request):

@@ -4,6 +4,7 @@ from fastkalshi.rest.market import Market
 from fastkalshi.rest.milestone import Milestone
 from fastkalshi.rest.pagination import KalshiPaginationError, paginate
 from fastkalshi.rest.portfolio import Portfolio
+from fastkalshi.rest.structured_target import StructuredTarget
 
 
 def test_paginate_preserves_filters_and_stops_on_empty_cursor():
@@ -47,6 +48,12 @@ def test_paginate_rejects_invalid_page_limit_eagerly():
         (Market(), "IterMarkets", "GetMarkets", "markets"),
         (Market(), "IterEvents", "GetEvents", "events"),
         (Milestone(), "IterMilestones", "GetMilestones", "milestones"),
+        (
+            StructuredTarget(),
+            "IterStructuredTargets",
+            "GetStructuredTargets",
+            "structured_targets",
+        ),
         (Portfolio(), "IterOrders", "GetOrders", "orders"),
         (Portfolio(), "IterFills", "GetFills", "fills"),
         (
