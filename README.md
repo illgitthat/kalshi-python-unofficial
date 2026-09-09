@@ -10,7 +10,7 @@ September 9, 2026.
 python -m pip install kalshi-python-unofficial
 ```
 
-Python 3.10 or newer is required. Demo is the default environment.
+Python 3.14 or newer is required. Demo is the default environment.
 
 ```python
 import kalshi
