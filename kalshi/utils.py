@@ -6,6 +6,21 @@ import pandas as pd
 from matplotlib.colors import Normalize
 
 
+def _normalize_trade_columns(trades_df: pd.DataFrame) -> pd.DataFrame:
+    normalized = trades_df.copy()
+    if "count_fp" in normalized:
+        normalized["count"] = pd.to_numeric(normalized["count_fp"])
+    if "yes_price_dollars" in normalized:
+        normalized["yes_price"] = pd.to_numeric(normalized["yes_price_dollars"]) * 100
+    if "taker_outcome_side" in normalized:
+        normalized["taker_side"] = normalized["taker_outcome_side"]
+    elif "taker_book_side" in normalized:
+        normalized["taker_side"] = normalized["taker_book_side"].map(
+            {"bid": "yes", "ask": "no"}
+        )
+    return normalized
+
+
 def get_all_trades(
     limit: int = 100,
     ticker: str | None = None,
@@ -149,8 +164,9 @@ def plot_trades(
     Plot trades over time with size-based coloring and taker direction arrows.
 
     Args:
-        trades_df: DataFrame containing trade data with columns:
-                   trade_id, ticker, count, created_time, yes_price, no_price, taker_side
+        trades_df: DataFrame containing current count_fp, yes_price_dollars,
+                   taker_outcome_side, and created_time fields. Legacy count,
+                   yes_price, and taker_side columns are also accepted.
         start_timestamp: Optional start time for filtering trades
         duration_hours: Optional duration in hours from start_timestamp
         title: Plot title
@@ -160,8 +176,7 @@ def plot_trades(
         print("No trade data to plot")
         return
 
-    # Create a copy to avoid modifying original data
-    df = trades_df.copy()
+    df = _normalize_trade_columns(trades_df)
 
     # Ensure created_time is datetime
     if "created_time" not in df.columns:
@@ -333,6 +348,7 @@ def calculate_vwap(
     if len(trades_df) == 0:
         return 0.0
 
+    trades_df = _normalize_trade_columns(trades_df)
     total_volume = trades_df[volume_col].sum()
     if total_volume == 0:
         return 0.0
@@ -346,8 +362,8 @@ def calculate_volume_stats(trades_df: pd.DataFrame) -> dict[str, float]:
     Calculate taker volume statistics for yes vs no sides.
 
     Args:
-        trades_df: DataFrame containing trade data with columns:
-                   taker_side, count, yes_price
+        trades_df: DataFrame using current fixed-point trade fields or their
+                   legacy count, yes_price, and taker_side aliases.
 
     Returns:
         Dictionary containing volume statistics
@@ -365,6 +381,8 @@ def calculate_volume_stats(trades_df: pd.DataFrame) -> dict[str, float]:
             "yes_dollar_percentage": 0,
             "no_dollar_percentage": 0,
         }
+
+    trades_df = _normalize_trade_columns(trades_df)
 
     # Calculate taker volume on yes vs no side
     yes_taker_volume = trades_df[trades_df["taker_side"] == "yes"]["count"].sum()

@@ -4,6 +4,14 @@ kalshi.rest package
 Submodules
 ----------
 
+kalshi.rest.account module
+--------------------------
+
+.. automodule:: kalshi.rest.account
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 kalshi.rest.collection module
 -----------------------------
 

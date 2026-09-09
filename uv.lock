@@ -466,6 +466,8 @@ analytics = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "matplotlib" },
+    { name = "pandas" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -491,6 +493,8 @@ provides-extras = ["analytics"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "matplotlib", specifier = ">=3.10" },
+    { name = "pandas", specifier = ">=2.2" },
     { name = "pyright", specifier = ">=1.1.400" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-cov", specifier = ">=6" },

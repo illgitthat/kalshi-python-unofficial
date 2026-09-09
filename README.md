@@ -88,6 +88,18 @@ live_data = milestone.GetLiveData(milestones["milestones"][0]["id"])
 
 Subaccounts require a supported Direct account and API tier.
 
+## Rate-limit information
+
+```python
+from kalshi.rest import account
+
+limits = account.GetLimits()
+costs = account.GetEndpointCosts()
+```
+
+These methods expose Kalshi's current account buckets and endpoint token
+costs. The SDK does not add sleeps or automatic rate limiting.
+
 ## WebSocket
 
 ```python
